@@ -53,7 +53,7 @@ The key of an edge property is starting with an edge denominator (<,> or <>) to 
 
 After the edge denominator the edge key consists of a string denoting the relationship name.
 
-Under the edge key, the value is an object with the target node ID as the key and edge properties as the values.
+Under the edge key, the value is an object with the target node ID as the key and edge properties as the values prefixed with a `-`. Also node properties can be set without the `-` prefix.
 
 If the edge has no properties, the value can be set to true.
 
@@ -65,8 +65,8 @@ If the edge has no properties, the value can be set to true.
     "property2": "value2",
     ">relationship1": {
       "node-2": {
-        "property1": "value1",
-        "order": 1
+        "-property1": "value1",
+        "-order": 1
       }
     }
   },
