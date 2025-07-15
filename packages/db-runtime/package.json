@@ -1,5 +1,5 @@
 {
-  "name": "@got-z/database-runtime",
+  "name": "@got-z/db-runtime",
   "version": "0.1.0",
   "description": "Zig-based database runtime for Got-Z graph database",
   "main": "build/lib.js",
