@@ -1,0 +1,20 @@
+{
+  "name": "@got-z/database-runtime",
+  "version": "0.1.0",
+  "description": "Zig-based database runtime for Got-Z graph database",
+  "main": "build/lib.js",
+  "type": "module",
+  "scripts": {
+    "build": "zig build",
+    "dev": "zig build && bun run test",
+    "test": "bun test",
+    "clean": "rm -rf zig-out zig-cache build"
+  },
+  "devDependencies": {
+    "bun-types": "latest",
+    "@types/node": "latest"
+  },
+  "dependencies": {
+    "@got-z/api-spec": "workspace:*"
+  }
+}

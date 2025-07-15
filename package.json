@@ -1,0 +1,21 @@
+{
+  "name": "got-z",
+  "version": "0.1.0",
+  "description": "Graph Data API with Zig database runtime",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "bun run --filter='*' build",
+    "test": "bun run --filter='*' test",
+    "dev": "bun run --filter='*' dev",
+    "clean": "bun run --filter='*' clean"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}
