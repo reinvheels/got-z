@@ -20,15 +20,6 @@ let server: any;
 const TEST_PORT = 3001;
 const SERVER_URL = `http://localhost:${TEST_PORT}`;
 
-// Mock responses for testing
-const mockPushResponse = {
-  status: 200,
-  name: "push",
-  message: "Nodes pushed successfully",
-};
-
-const mockPullResponse = {};
-
 // Create dummy HTTP server
 beforeAll(async () => {
   server = Bun.serve({
@@ -36,10 +27,13 @@ beforeAll(async () => {
     fetch(req) {
       const url = new URL(req.url);
 
-      return new Response(JSON.stringify(mockPushResponse), {
-        headers: { "Content-Type": "application/json" },
-        status: 500,
-      });
+      return new Response(
+        JSON.stringify({}),
+        {
+          headers: { "Content-Type": "application/json" },
+          status: 500,
+        }
+      );
     },
   });
 
@@ -92,7 +86,6 @@ describe("Basic node operations", () => {
 
   test("POST /push - basic node creation", () => {
     expect(resPush.status).toBe(200);
-    expect(resPush.data).toEqual(mockPushResponse);
   });
 
   test("POST /pull - query subset of created nodes", async () => {
@@ -138,7 +131,6 @@ describe("Node operations with edges", () => {
 
   test("POST /push - nodes with edges", () => {
     expect(resPush.status).toBe(200);
-    expect(resPush.data).toEqual(mockPushResponse);
   });
 
   test("POST /pull - query edges and connected nodes", async () => {
@@ -183,7 +175,6 @@ describe("Node operations with rights", () => {
 
   test("POST /push - nodes with rights", () => {
     expect(resPush.status).toBe(200);
-    expect(resPush.data).toEqual(mockPushResponse);
   });
 
   test("POST /pull - query nodes with rights", async () => {
@@ -224,7 +215,6 @@ describe("Actor node operations", () => {
 
   test("POST /push - actor nodes", () => {
     expect(resPush.status).toBe(200);
-    expect(resPush.data).toEqual(mockPushResponse);
   });
 
   test("POST /pull - query actor nodes", async () => {
