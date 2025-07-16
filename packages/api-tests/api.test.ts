@@ -259,22 +259,53 @@ describe("Node operations with rights", () => {
   });
 });
 
-test("POST /push - actor nodes", async () => {
-  const pushRequest: PushRequest = {
-    [`${Prefixes.RIGHTS}user123`]: {
-      name: "John Doe",
-      email: "john.doe@example.com",
-    },
-    [`${Prefixes.RIGHTS}group456`]: {
-      name: "Admins",
-      [`${Prefixes.RIGHTS}user123`]: Rights.BE,
-    },
-  };
+describe("Actor node operations", () => {
+  let resPush: Response<PushResponse>;
+  beforeEach(async () => {
+    const pushRequest: PushRequest = {
+      [`${Prefixes.RIGHTS}user123`]: {
+        name: "John Doe",
+        email: "john.doe@example.com",
+      },
+      [`${Prefixes.RIGHTS}group456`]: {
+        name: "Admins",
+        [`${Prefixes.RIGHTS}user123`]: Rights.BE,
+      },
+    };
+    resPush = await makeRequest("/push", "POST", pushRequest);
+  });
 
-  const response = await makeRequest("/push", "POST", pushRequest);
+  test("POST /push - actor nodes", () => {
+    expect(resPush.status).toBe(200);
+    expect(resPush.data).toEqual(mockPushResponse);
+  });
 
-  expect(response.status).toBe(200);
-  expect(response.data).toBeDefined();
+  test("POST /pull - query actor nodes", async () => {
+    const pullRequest: PullRequest = {
+      [`${Prefixes.RIGHTS}user123`]: {
+        name: true,
+        email: true,
+      },
+      [`${Prefixes.RIGHTS}group456`]: {
+        name: true,
+        [`${Prefixes.RIGHTS}user123`]: true,
+      },
+    };
+
+    const response = await makeRequest("/pull", "POST", pullRequest);
+
+    expect(response.status).toBe(200);
+    expect(response.data).toEqual({
+      [`${Prefixes.RIGHTS}user123`]: {
+        name: "John Doe",
+        email: "john.doe@example.com",
+      },
+      [`${Prefixes.RIGHTS}group456`]: {
+        name: "Admins",
+        [`${Prefixes.RIGHTS}user123`]: Rights.BE,
+      },
+    });
+  });
 });
 
 // Basic pull endpoint tests
