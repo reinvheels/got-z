@@ -125,7 +125,7 @@ describe("Node operations with edges", () => {
     const pushRequest: PushRequest = {
       "node-1": {
         property1: "value1",
-        [`${EdgeDirection.OUTGOING}relationship1`]: {
+        [`${EdgeDirection.OUT}relationship1`]: {
           "node-2": {
             [`${Prefixes.EDGE_PROPERTY}property1`]: "value1",
             [`${Prefixes.EDGE_PROPERTY}order`]: 1,
@@ -145,7 +145,7 @@ describe("Node operations with edges", () => {
     const pullRequest: PullRequest = {
       "node-1": {
         property1: true,
-        [`${EdgeDirection.OUTGOING}relationship1`]: {
+        [`${EdgeDirection.OUT}relationship1`]: {
           "node-2": {
             [`${Prefixes.EDGE_PROPERTY}order`]: true,
           },
@@ -159,7 +159,7 @@ describe("Node operations with edges", () => {
     expect(response.data).toEqual({
       "node-1": {
         property1: "value1",
-        [`${EdgeDirection.OUTGOING}relationship1`]: {
+        [`${EdgeDirection.OUT}relationship1`]: {
           "node-2": {
             [`${Prefixes.EDGE_PROPERTY}order`]: 1,
           },

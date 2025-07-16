@@ -37,7 +37,7 @@ test('validates push request with edges', () => {
   const requestWithEdges = {
     'node-1': {
       property1: 'value1',
-      [`${EdgeDirection.OUTGOING}relationship1`]: {
+      [`${EdgeDirection.OUT}relationship1`]: {
         'node-2': {
           [`${Prefixes.EDGE_PROPERTY}property1`]: 'value1',
           [`${Prefixes.EDGE_PROPERTY}order`]: 1,
@@ -118,10 +118,10 @@ test('validates pull request with nested properties', () => {
 test('validates pull request with edges', () => {
   const requestWithEdges = {
     'node-1': {
-      [`${EdgeDirection.OUTGOING}relationship1`]: true,
+      [`${EdgeDirection.OUT}relationship1`]: true,
     },
     'node-2': {
-      [`${EdgeDirection.INCOMING}relationship2`]: {
+      [`${EdgeDirection.IN}relationship2`]: {
         id: true,
         nodeProperty1: true,
         [`${Prefixes.EDGE_PROPERTY}edgeProperty1`]: true,

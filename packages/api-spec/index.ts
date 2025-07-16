@@ -36,9 +36,9 @@ export const Rights = {
 
 // Edge direction constants
 export const EdgeDirection = {
-  OUTGOING: '>',
-  INCOMING: '<',
-  BIDIRECTIONAL: '<>',
+  OUT: '>',
+  IN: '<',
+  BI: '<>',
 } as const;
 
 // Special prefixes
