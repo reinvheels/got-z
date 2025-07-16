@@ -1,10 +1,18 @@
-import { test, expect, beforeAll, afterAll, describe } from "bun:test";
+import {
+  test,
+  expect,
+  beforeAll,
+  afterAll,
+  describe,
+  beforeEach,
+} from "bun:test";
 import {
   Rights,
   EdgeDirection,
   Prefixes,
   PushRequest,
   PullRequest,
+  PushResponse,
 } from "@got-z/api-spec";
 
 // Dummy server setup
@@ -97,8 +105,13 @@ afterAll(() => {
   }
 });
 
+
+type Response<T> = {
+  status: number;
+  data: T;
+};
 // Helper function to make HTTP requests
-async function makeRequest(endpoint: string, method: string, body?: any) {
+async function makeRequest<TRes>(endpoint: string, method: string, body?: any) {
   const response = await fetch(`${SERVER_URL}${endpoint}`, {
     method,
     headers: {
@@ -110,27 +123,29 @@ async function makeRequest(endpoint: string, method: string, body?: any) {
   return {
     status: response.status,
     data: await response.json(),
-  };
+  } as Response<TRes>;
 }
 
 // Basic push endpoint tests
 describe("Basic node operations", () => {
-  const pushRequest: PushRequest = {
-    "node-1": {
-      property1: "value1",
-      property2: "value2",
-    },
-    "node-2": {
-      property1: "value1",
-      property2: "value2",
-    },
-  };
+  let resPush: Response<PushResponse>;
+  beforeEach(async () => {
+    const pushRequest: PushRequest = {
+      "node-1": {
+        property1: "value1",
+        property2: "value2",
+      },
+      "node-2": {
+        property1: "value1",
+        property2: "value2",
+      },
+    };
+    resPush = await makeRequest("/push", "POST", pushRequest);
+  });
 
-  test("POST /push - basic node creation", async () => {
-    const response = await makeRequest("/push", "POST", pushRequest);
-
-    expect(response.status).toBe(200);
-    expect(response.data).toBeDefined();
+  test("POST /push - basic node creation", () => {
+    expect(resPush.status).toBe(200);
+    expect(resPush.data).toEqual(mockPushResponse);
   });
 
   test("POST /pull - query subset of created nodes", async () => {
@@ -157,23 +172,54 @@ describe("Basic node operations", () => {
   });
 });
 
-test("POST /push - nodes with edges", async () => {
-  const pushRequest: PushRequest = {
-    "node-1": {
-      property1: "value1",
-      [`${EdgeDirection.OUTGOING}relationship1`]: {
-        "node-2": {
-          [`${Prefixes.EDGE_PROPERTY}property1`]: "value1",
-          [`${Prefixes.EDGE_PROPERTY}order`]: 1,
+describe("Node operations with edges", () => {
+  let resPush: Response<PushResponse>;
+  beforeEach(async () => {
+    const pushRequest: PushRequest = {
+      "node-1": {
+        property1: "value1",
+        [`${EdgeDirection.OUTGOING}relationship1`]: {
+          "node-2": {
+            [`${Prefixes.EDGE_PROPERTY}property1`]: "value1",
+            [`${Prefixes.EDGE_PROPERTY}order`]: 1,
+          },
         },
       },
-    },
-  };
+    };
+    resPush = await makeRequest("/push", "POST", pushRequest);
+  });
 
-  const response = await makeRequest("/push", "POST", pushRequest);
+  test("POST /push - nodes with edges", () => {
+    expect(resPush.status).toBe(200);
+    expect(resPush.data).toEqual(mockPushResponse);
+  });
 
-  expect(response.status).toBe(200);
-  expect(response.data).toBeDefined();
+  test("POST /pull - query edges and connected nodes", async () => {
+    const pullRequest: PullRequest = {
+      "node-1": {
+        property1: true,
+        [`${EdgeDirection.OUTGOING}relationship1`]: {
+          "node-2": {
+            [`${Prefixes.EDGE_PROPERTY}order`]: true,
+          },
+        },
+      },
+    };
+
+    const response = await makeRequest("/pull", "POST", pullRequest);
+
+    expect(response.status).toBe(200);
+    expect(response.data).toEqual({
+      "node-1": {
+        property1: "value1",
+        [`${EdgeDirection.OUTGOING}relationship1`]: {
+          "node-2": {
+            [`${Prefixes.EDGE_PROPERTY}order`]: 1,
+          },
+        },
+      },
+    });
+  });
 });
 
 test("POST /push - nodes with rights", async () => {
