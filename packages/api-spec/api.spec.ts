@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test';
-import { PushRequestSchema, PullResponseSchema, Rights, EdgeDirection, Prefixes } from '@got-z/api-spec';
+import { PushRequestSchema, PullRequestSchema, PullResponseSchema, Rights, EdgeDirection, Prefixes } from '@got-z/api-spec';
 
 // Test basic push request validation
 test('validates basic push request', () => {
@@ -80,5 +80,93 @@ test('validates actor nodes', () => {
   };
 
   const result = PushRequestSchema.safeParse(actorNodes);
+  expect(result.success).toBe(true);
+});
+
+// Test basic pull request validation
+test('validates basic pull request', () => {
+  const validRequest = {
+    'node-1': {
+      property2: true,
+    },
+    'node-2': {
+      property1: true,
+    },
+  };
+
+  const result = PullRequestSchema.safeParse(validRequest);
+  expect(result.success).toBe(true);
+});
+
+// Test pull request with nested properties
+test('validates pull request with nested properties', () => {
+  const requestWithNested = {
+    'node-1': {
+      property1: {
+        subproperty1: true,
+        subproperty2: true,
+      },
+      property2: true,
+    },
+  };
+
+  const result = PullRequestSchema.safeParse(requestWithNested);
+  expect(result.success).toBe(true);
+});
+
+// Test pull request with edges
+test('validates pull request with edges', () => {
+  const requestWithEdges = {
+    'node-1': {
+      [`${EdgeDirection.OUTGOING}relationship1`]: true,
+    },
+    'node-2': {
+      [`${EdgeDirection.INCOMING}relationship2`]: {
+        id: true,
+        nodeProperty1: true,
+        [`${Prefixes.EDGE_PROPERTY}edgeProperty1`]: true,
+        [`${Prefixes.EDGE_PROPERTY}order`]: true,
+      },
+    },
+  };
+
+  const result = PullRequestSchema.safeParse(requestWithEdges);
+  expect(result.success).toBe(true);
+});
+
+// Test pull request with rights
+test('validates pull request with rights', () => {
+  const requestWithRights = {
+    'node-1': {
+      property1: true,
+      [`${Prefixes.RIGHTS}`]: {
+        name: true,
+      },
+    },
+    'node-2': {
+      property1: true,
+      [`${Prefixes.RIGHTS}user123`]: true,
+      [`${Prefixes.RIGHTS}group456`]: true,
+    },
+  };
+
+  const result = PullRequestSchema.safeParse(requestWithRights);
+  expect(result.success).toBe(true);
+});
+
+// Test pull request with actor nodes
+test('validates pull request with actor nodes', () => {
+  const actorRequest = {
+    [`${Prefixes.RIGHTS}user123`]: {
+      name: true,
+      email: true,
+    },
+    [`${Prefixes.RIGHTS}group456`]: {
+      name: true,
+      [`${Prefixes.RIGHTS}user123`]: true,
+    },
+  };
+
+  const result = PullRequestSchema.safeParse(actorRequest);
   expect(result.success).toBe(true);
 });
