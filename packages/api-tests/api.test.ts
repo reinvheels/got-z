@@ -27,15 +27,7 @@ const mockPushResponse = {
   message: "Nodes pushed successfully",
 };
 
-const mockPullResponse = {
-  "node-1": {
-    property1: "value1",
-    property2: "value2",
-  },
-  "node-2": {
-    property1: "value1",
-  },
-};
+const mockPullResponse = {};
 
 // Create dummy HTTP server
 beforeAll(async () => {
@@ -44,53 +36,9 @@ beforeAll(async () => {
     fetch(req) {
       const url = new URL(req.url);
 
-      if (url.pathname === "/push" && req.method === "POST") {
-        // Check if request body is valid JSON
-        const contentType = req.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          return new Response(
-            JSON.stringify({ error: "Invalid content type" }),
-            {
-              status: 400,
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-        }
-
-        return new Response(JSON.stringify(mockPushResponse), {
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-
-      if (url.pathname === "/pull" && req.method === "POST") {
-        // Check if request body is valid JSON
-        const contentType = req.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          return new Response(
-            JSON.stringify({ error: "Invalid content type" }),
-            {
-              status: 400,
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-        }
-
-        return new Response(JSON.stringify(mockPullResponse), {
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-
-      // Handle invalid methods for valid endpoints
-      if (url.pathname === "/push" || url.pathname === "/pull") {
-        return new Response(JSON.stringify({ error: "Method not allowed" }), {
-          status: 405,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-
-      // Default response for server availability check
-      return new Response(JSON.stringify({ message: "Server running" }), {
+      return new Response(JSON.stringify(mockPushResponse), {
         headers: { "Content-Type": "application/json" },
+        status: 500,
       });
     },
   });
@@ -104,7 +52,6 @@ afterAll(() => {
     server.stop();
   }
 });
-
 
 type Response<T> = {
   status: number;
