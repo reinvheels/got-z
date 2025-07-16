@@ -222,19 +222,41 @@ describe("Node operations with edges", () => {
   });
 });
 
-test("POST /push - nodes with rights", async () => {
-  const pushRequest: PushRequest = {
-    "node-1": {
-      property1: "value1",
-      [`${Prefixes.RIGHTS}user123`]: Rights.READ + Rights.WRITE,
-      [`${Prefixes.RIGHTS}admin`]: Rights.ADMIN,
-    },
-  };
+describe("Node operations with rights", () => {
+  let resPush: Response<PushResponse>;
+  beforeEach(async () => {
+    const pushRequest: PushRequest = {
+      "node-1": {
+        [`${Prefixes.RIGHTS}user123`]: Rights.READ + Rights.WRITE,
+        [`${Prefixes.RIGHTS}admin`]: Rights.ADMIN,
+      },
+    };
+    resPush = await makeRequest("/push", "POST", pushRequest);
+  });
 
-  const response = await makeRequest("/push", "POST", pushRequest);
+  test("POST /push - nodes with rights", () => {
+    expect(resPush.status).toBe(200);
+    expect(resPush.data).toEqual(mockPushResponse);
+  });
 
-  expect(response.status).toBe(200);
-  expect(response.data).toBeDefined();
+  test("POST /pull - query nodes with rights", async () => {
+    const pullRequest: PullRequest = {
+      "node-1": {
+        [`${Prefixes.RIGHTS}user123`]: true,
+        [`${Prefixes.RIGHTS}admin`]: true,
+      },
+    };
+
+    const response = await makeRequest("/pull", "POST", pullRequest);
+
+    expect(response.status).toBe(200);
+    expect(response.data).toEqual({
+      "node-1": {
+        [`${Prefixes.RIGHTS}user123`]: Rights.READ + Rights.WRITE,
+        [`${Prefixes.RIGHTS}admin`]: Rights.ADMIN,
+      },
+    });
+  });
 });
 
 test("POST /push - actor nodes", async () => {
