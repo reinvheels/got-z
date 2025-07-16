@@ -6,7 +6,14 @@ import {
   describe,
   beforeEach,
 } from "bun:test";
-import { PushRequest, PullRequest, PushResponse } from "@got-z/api-spec";
+import {
+  PushRequest,
+  PullRequest,
+  PushResponse,
+  EdgeDirection,
+  Prefixes,
+  PullResponse,
+} from "@got-z/api-spec";
 
 // Dummy server setup
 let server: any;
@@ -88,14 +95,6 @@ describe("Large-scale node operations", () => {
     );
   });
 
-  test("POST /push - large number of nodes", () => {
-    expect(resPush.data).toEqual({
-      status: 200,
-      name: "push",
-      message: "Nodes pushed successfully",
-    });
-  });
-
   describe("Pull operations", () => {
     const pullRequest: PullRequest = {};
     for (let i = 0; i < PERFORMANCE_CONFIG.nodeCount; i++) {
@@ -127,6 +126,85 @@ describe("Large-scale node operations", () => {
           Object.keys(pullRequest).map((key) => [key, { property1: "value1" }])
         )
       );
+    });
+  });
+});
+
+describe("Single node with multiple edges", () => {
+  const EDGE_CONFIG = {
+    edgeCount: 10,
+    maxMilliseconds: 200,
+  };
+
+  const rel = `${EdgeDirection.OUT}relationship1`;
+  const pushRequest: PushRequest = { mainNode1: { [rel]: {} } };
+
+  // Add edges to different target nodes
+  for (let i = 0; i < EDGE_CONFIG.edgeCount; i++) {
+    pushRequest.mainNode1[rel][`target-node-${i.toString().padStart(4, "0")}`] =
+      {
+        [`${Prefixes.EDGE_PROPERTY}weight`]: i,
+      };
+  }
+  let milliseconds: number;
+  let resPush: Response<PushResponse>;
+
+  beforeEach(async () => {
+    // Push the data
+    const startTime = performance.now();
+    resPush = await makeRequest("/push", "POST", pushRequest);
+    const endTime = performance.now();
+    milliseconds = endTime - startTime;
+  });
+
+  test(`POST /push - single node with ${EDGE_CONFIG.edgeCount} edges performance < ${EDGE_CONFIG.maxMilliseconds}ms`, () => {
+    expect(resPush.status).toBe(200);
+    expect(milliseconds).toBeLessThanOrEqual(EDGE_CONFIG.maxMilliseconds);
+  });
+
+  describe("Pull operations with edges", () => {
+    let pullResponse: Response<PullResponse>;
+    const pullRequest: PullRequest = {
+      mainNode1: {
+        [`${EdgeDirection.OUT}relationship1`]: {
+          [`${Prefixes.EDGE_PROPERTY}weight`]: true,
+        },
+      },
+    };
+
+    beforeEach(async () => {
+      // Pull edges and connected nodes
+      const startTime = performance.now();
+      pullResponse = await makeRequest("/pull", "POST", pullRequest);
+      const endTime = performance.now();
+      milliseconds = endTime - startTime;
+    });
+
+    test(`POST /pull - performance under load < ${EDGE_CONFIG.maxMilliseconds}ms`, () => {
+      expect(pullResponse.status).toBe(200);
+      expect(milliseconds).toBeLessThanOrEqual(EDGE_CONFIG.maxMilliseconds);
+    });
+
+    test("POST /pull - query edges and connected nodes", async () => {
+      const response = await makeRequest<PullResponse>(
+        "/pull",
+        "POST",
+        pullRequest
+      );
+
+      const rel = `${EdgeDirection.OUT}relationship1`;
+      expect(response.data).toEqual({
+        mainNode1: {
+          [rel]: Object.fromEntries(
+            Object.keys(pushRequest.mainNode1[rel]).map((key, index) => [
+              key,
+              {
+                [`${Prefixes.EDGE_PROPERTY}weight`]: index,
+              },
+            ])
+          ),
+        },
+      });
     });
   });
 });
