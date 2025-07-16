@@ -11,7 +11,7 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "bun-types": "latest",
+    "@types/bun": "latest",
     "@types/node": "latest"
   },
   "dependencies": {

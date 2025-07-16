@@ -7,11 +7,10 @@
   "scripts": {
     "build": "zig build",
     "dev": "zig build && bun run test",
-    "test": "bun test",
     "clean": "rm -rf zig-out zig-cache build"
   },
   "devDependencies": {
-    "bun-types": "latest",
+    "@types/bun": "latest",
     "@types/node": "latest"
   },
   "dependencies": {

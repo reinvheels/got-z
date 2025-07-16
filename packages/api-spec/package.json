@@ -5,12 +5,13 @@
   "main": "index.ts",
   "type": "module",
   "scripts": {
+    "test": "bun test",
     "build": "bun build index.ts --outdir=dist",
     "dev": "bun run --watch index.ts",
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "bun-types": "latest",
+    "@types/bun": "latest",
     "@types/node": "latest"
   },
   "dependencies": {
