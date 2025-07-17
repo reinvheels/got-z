@@ -208,3 +208,141 @@ describe("Single node with multiple edges", () => {
     });
   });
 });
+
+describe("Nested queries with multiple levels", () => {
+  const NESTED_CONFIG = {
+    levels: 3,
+    nodesPerLevel: 3,
+    maxMilliseconds: 300,
+  };
+
+  const rel = `${EdgeDirection.OUT}relationship1`;
+  const pushRequest: PushRequest = {};
+
+  // Build nested structure: root -> level1 -> level2 -> level3
+  const rootNodeId = `root-node`;
+  pushRequest[rootNodeId] = { [rel]: {} };
+
+  // Generate nested levels
+  for (let level = 1; level <= NESTED_CONFIG.levels; level++) {
+    const currentLevelNodes: string[] = [];
+    
+    // Create nodes for current level
+    for (let i = 0; i < NESTED_CONFIG.nodesPerLevel; i++) {
+      const nodeId = `level${level}-node-${i}`;
+      currentLevelNodes.push(nodeId);
+      
+      // Add node to push request (with edges if not the last level)
+      if (level < NESTED_CONFIG.levels) {
+        pushRequest[nodeId] = { [rel]: {} };
+      } else {
+        pushRequest[nodeId] = {}; // Leaf nodes have no outgoing edges
+      }
+    }
+    
+    // Connect previous level to current level
+    if (level === 1) {
+      // Connect root to level 1
+      currentLevelNodes.forEach((nodeId, index) => {
+        pushRequest[rootNodeId][rel][nodeId] = {
+          [`${Prefixes.EDGE_PROPERTY}weight`]: index,
+        };
+      });
+    } else {
+      // Connect previous level nodes to current level
+      const prevLevel = level - 1;
+      for (let prevIndex = 0; prevIndex < NESTED_CONFIG.nodesPerLevel; prevIndex++) {
+        const prevNodeId = `level${prevLevel}-node-${prevIndex}`;
+        currentLevelNodes.forEach((nodeId, index) => {
+          pushRequest[prevNodeId][rel][nodeId] = {
+            [`${Prefixes.EDGE_PROPERTY}weight`]: index,
+          };
+        });
+      }
+    }
+  }
+
+  let milliseconds: number;
+  let resPush: Response<PushResponse>;
+
+  beforeEach(async () => {
+    // Push the nested data
+    const startTime = performance.now();
+    resPush = await makeRequest("/push", "POST", pushRequest);
+    const endTime = performance.now();
+    milliseconds = endTime - startTime;
+  });
+
+  test(`POST /push - nested structure with ${NESTED_CONFIG.levels} levels performance < ${NESTED_CONFIG.maxMilliseconds}ms`, () => {
+    expect(resPush.status).toBe(200);
+    expect(milliseconds).toBeLessThanOrEqual(NESTED_CONFIG.maxMilliseconds);
+  });
+
+  describe("Pull operations for nested queries", () => {
+    let pullResponse: Response<PullResponse>;
+    
+    // Create nested pull request structure with nested relationship paths
+    const pullRequest: PullRequest = {};
+    
+    // Build nested relationship path: nodeId -> '>relationship1' -> '>relationship1' -> ...
+    let currentLevel: any = {
+      [`${Prefixes.EDGE_PROPERTY}weight`]: true,
+    };
+    
+    // Build nested structure from deepest level up
+    for (let level = NESTED_CONFIG.levels; level >= 1; level--) {
+      currentLevel = {
+        [rel]: currentLevel
+      };
+    }
+    
+    pullRequest[rootNodeId] = currentLevel;
+
+    beforeEach(async () => {
+      // Pull nested data
+      const startTime = performance.now();
+      pullResponse = await makeRequest("/pull", "POST", pullRequest);
+      const endTime = performance.now();
+      milliseconds = endTime - startTime;
+    });
+
+    test(`POST /pull - nested query performance < ${NESTED_CONFIG.maxMilliseconds}ms`, () => {
+      expect(pullResponse.status).toBe(200);
+      expect(milliseconds).toBeLessThanOrEqual(NESTED_CONFIG.maxMilliseconds);
+    });
+
+    test("POST /pull - verify nested structure data", async () => {
+      const response = await makeRequest<PullResponse>(
+        "/pull",
+        "POST",
+        pullRequest
+      );
+
+      // Verify root node has nested relationship structure
+      expect(response.data[rootNodeId][rel]).toBeDefined();
+      const rootConnections = Object.keys(response.data[rootNodeId][rel]);
+      expect(rootConnections).toHaveLength(NESTED_CONFIG.nodesPerLevel);
+
+      // Navigate through nested levels to verify structure
+      let currentLevel = response.data[rootNodeId][rel];
+      
+      for (let level = 1; level <= NESTED_CONFIG.levels; level++) {
+        // Each level should have the expected number of nodes
+        const nodeKeys = Object.keys(currentLevel);
+        expect(nodeKeys).toHaveLength(NESTED_CONFIG.nodesPerLevel);
+        
+        // Check if this is not the last level
+        if (level < NESTED_CONFIG.levels) {
+          // Pick first node to navigate deeper
+          const firstNodeId = nodeKeys[0];
+          expect(currentLevel[firstNodeId][rel]).toBeDefined();
+          currentLevel = currentLevel[firstNodeId][rel];
+        } else {
+          // Last level should have edge properties
+          const firstNodeId = nodeKeys[0];
+          expect(currentLevel[firstNodeId][`${Prefixes.EDGE_PROPERTY}weight`]).toBeDefined();
+        }
+      }
+    });
+  });
+});
