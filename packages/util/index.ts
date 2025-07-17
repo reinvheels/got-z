@@ -29,13 +29,15 @@ Object.defineProperty(Object.prototype, "write", {
     // Navigate to the parent of the target property
     for (let i = 0; i < path.length - 1; i++) {
       const key = path[i];
+      const nextKey = path[i + 1];
 
       if (
         current[key] === null ||
         current[key] === undefined ||
         typeof current[key] !== "object"
       ) {
-        current[key] = {};
+        // Create array if next key is numeric, otherwise create object
+        current[key] = typeof nextKey === "number" ? [] : {};
       }
       current = current[key];
     }
