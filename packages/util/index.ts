@@ -49,11 +49,3 @@ Object.defineProperty(Object.prototype, "write", {
   configurable: true,
   enumerable: false,
 });
-
-const a = {};
-// Example usage of read and write methods
-a.write(["user", 1, "name"], "John Doe");
-console.log(a);
-
-// This export makes the file a module, so the global declaration only applies when imported
-// export {};
