@@ -14,6 +14,7 @@ import {
   PullRequest,
   PushResponse,
 } from "@got-z/api-spec";
+import { getPermutations } from "@got-z/util";
 
 // Dummy server setup
 let server: any;
@@ -27,13 +28,10 @@ beforeAll(async () => {
     fetch(req) {
       const url = new URL(req.url);
 
-      return new Response(
-        JSON.stringify({}),
-        {
-          headers: { "Content-Type": "application/json" },
-          status: 500,
-        }
-      );
+      return new Response(JSON.stringify({}), {
+        headers: { "Content-Type": "application/json" },
+        status: 500,
+      });
     },
   });
 
@@ -245,3 +243,48 @@ describe("Actor node operations", () => {
   });
 });
 
+describe("Nested edge operations", () => {
+  const NESTED_CONFIG = {
+    levels: 3,
+    nodesPerLevel: 2,
+  };
+
+  let resPush: Response<PushResponse>;
+  const pushRequest: PushRequest = {};
+
+  getPermutations(NESTED_CONFIG.levels, NESTED_CONFIG.nodesPerLevel)
+    .map((digits) =>
+      digits
+        .reduce<string[]>(
+          (a, _, i) => [
+            ...a,
+            ">relationship1",
+            `node-${digits.slice(0, i + 1).join("-")}`,
+          ],
+          ["root-node"]
+        )
+        .concat("prop1")
+    )
+    .forEach((path) => pushRequest.write(path, "val1"));
+
+  beforeEach(async () => {
+    resPush = await makeRequest("/push", "POST", pushRequest);
+  });
+
+  test("POST /push - nested structure with multiple levels", () => {
+    expect(resPush.status).toBe(200);
+  });
+
+  test("POST /pull - query nested edges and connected nodes", async () => {
+    const pullRequest: PullRequest = {};
+    const rel = `${EdgeDirection.OUT}relationship1`;
+    pullRequest.write(
+      ["root-node", ...Array(NESTED_CONFIG.levels).fill(rel), "prop1"],
+      true
+    );
+
+    const response = await makeRequest("/pull", "POST", pullRequest);
+
+    expect(response.data).toEqual(pushRequest);
+  });
+});
