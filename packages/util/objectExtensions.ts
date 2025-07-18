@@ -1,5 +1,5 @@
 // TypeScript declarations for monkey-patched methods
-import "./types";
+import "./types.d";
 
 // Monkey-patch Object prototype with read method using defineProperty
 Object.defineProperty(Object.prototype, "read", {
