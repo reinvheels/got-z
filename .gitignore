@@ -11,6 +11,7 @@ build/
 # Zig build artifacts
 zig-out/
 zig-cache/
+.zig-cache/
 
 # Runtime files
 *.log

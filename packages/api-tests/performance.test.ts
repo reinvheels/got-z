@@ -1,11 +1,4 @@
-import {
-  test,
-  expect,
-  beforeAll,
-  afterAll,
-  describe,
-  beforeEach,
-} from "bun:test";
+import { test, expect, describe, beforeEach } from "bun:test";
 import {
   PushRequest,
   PullRequest,
@@ -17,31 +10,8 @@ import {
 import { getPermutations } from "@got-z/util";
 
 // Dummy server setup
-let server: any;
-const TEST_PORT = 3002;
+const TEST_PORT = 3001;
 const SERVER_URL = `http://localhost:${TEST_PORT}`;
-
-// Create dummy HTTP server
-beforeAll(async () => {
-  server = Bun.serve({
-    port: TEST_PORT,
-    fetch(req) {
-      return new Response(JSON.stringify({}), {
-        headers: { "Content-Type": "application/json" },
-        status: 500,
-      });
-    },
-  });
-
-  // Wait a bit for server to start
-  await new Promise((resolve) => setTimeout(resolve, 100));
-});
-
-afterAll(() => {
-  if (server) {
-    server.stop();
-  }
-});
 
 type Response<T> = {
   status: number;
