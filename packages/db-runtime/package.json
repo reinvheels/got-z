@@ -5,6 +5,7 @@
   "main": "build/lib.js",
   "type": "module",
   "scripts": {
+    "watch": "find . -name \"*.zig\" | entr -r zig build run",
     "build": "zig build",
     "dev": "zig build && bun run test",
     "clean": "rm -rf zig-out zig-cache build"
