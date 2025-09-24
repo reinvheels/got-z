@@ -12,7 +12,7 @@ pub fn build(b: *std.Build) void {
 
     // Create a shared library that can be used from Node.js/Bun
     const lib = b.addSharedLibrary(.{
-        .name = "got-z-db",
+        .name = "got-z-db-runtime",
         .root_source_file = .{ .path = "src/main.zig" },
         .target = target,
         .optimize = optimize,
@@ -23,12 +23,12 @@ pub fn build(b: *std.Build) void {
 
     // Export C ABI functions
     lib.linkLibC();
-    
+
     b.installArtifact(lib);
 
     // Create a simple test executable
     const exe = b.addExecutable(.{
-        .name = "got-z-test",
+        .name = "got-z-db-runtime",
         .root_source_file = .{ .path = "src/main.zig" },
         .target = target,
         .optimize = optimize,
