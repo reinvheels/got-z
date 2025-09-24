@@ -1,0 +1,10 @@
+.{
+    .name = "got-z-db",
+    .version = "0.1.0",
+    .dependencies = .{
+        .httpz = .{
+            .url = "https://github.com/karlseguin/http.zig/archive/zig-0.11.tar.gz",
+            .hash = "12206e909ab9ea45ad19b3a87dd176b6d5d1a552b028f22529b616d06817560cf65c",
+        },
+    },
+}

@@ -4,6 +4,12 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    // Add httpz dependency
+    const httpz = b.dependency("httpz", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     // Create a shared library that can be used from Node.js/Bun
     const lib = b.addSharedLibrary(.{
         .name = "got-z-db",
@@ -11,6 +17,9 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+
+    // Add httpz module to library
+    lib.addModule("httpz", httpz.module("httpz"));
 
     // Export C ABI functions
     lib.linkLibC();
@@ -24,6 +33,9 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+
+    // Add httpz module to executable
+    exe.addModule("httpz", httpz.module("httpz"));
 
     b.installArtifact(exe);
 
