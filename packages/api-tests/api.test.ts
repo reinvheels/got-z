@@ -7,7 +7,7 @@ import {
   PullRequest,
   PushResponse,
 } from "@got-z/api-spec";
-import { getPermutations } from "@got-z/util";
+import { delay, getPermutations } from "@got-z/util";
 
 // Dummy server setup
 const TEST_PORT = 3001;
@@ -19,6 +19,7 @@ type Response<T> = {
 };
 // Helper function to make HTTP requests
 async function makeRequest<TRes>(endpoint: string, method: string, body?: any) {
+  await delay(10);
   const response = await fetch(`${SERVER_URL}${endpoint}`, {
     method,
     headers: {
