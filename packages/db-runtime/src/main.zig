@@ -16,24 +16,22 @@ pub fn main() !void {
     }
 
     var router = try server.router(.{});
-    router.all("/*", getUser, .{});
+    router.post("/push", push, .{});
+    router.post("/pull", pull, .{});
 
     // blocks
     try server.listen();
 }
 
-fn getUser(req: *httpz.Request, res: *httpz.Response) !void {
-    std.log.info("Request method: {s}", .{@tagName(req.method)});
-    std.log.info("Request path: {s}", .{req.url.path});
+fn push(req: *httpz.Request, res: *httpz.Response) !void {
+    std.log.info("PUSH: {?s}", .{req.body()});
 
-    // var it = req.headers;
-    // while (it.next()) |header| {
-    //     std.log.info("Header {s}: {s}", .{ header.name, header.value });
-    // }
+    res.status = 500;
+    try res.json(.{ .name = "Teg" }, .{});
+}
 
-    // if (req.body()) |body| {
-    //     std.log.info("Request body: {s}", .{body});
-    // }
+fn pull(req: *httpz.Request, res: *httpz.Response) !void {
+    std.log.info("PULL: {?s}", .{req.body()});
 
     res.status = 200;
     try res.json(.{ .name = "Teg" }, .{});
