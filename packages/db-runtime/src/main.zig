@@ -83,6 +83,10 @@ pub fn main() !void {
     std.debug.print("Server started on port 3001\n", .{});
     std.debug.print("Message processor thread started\n", .{});
 
+    // while (true) {
+    //     std.debug.print("enqueuing\n", .{});
+    // }
+
     // blocks
     try server.listen();
 }
@@ -139,7 +143,7 @@ fn pull(req: *httpz.Request, res: *httpz.Response) !void {
 
 fn processMessages() void {
     while (true) {
-        // std.debug.print("listening\n", .{});
+        // std.debug.print("LISTENING\n", .{});
         if (global_queue.dequeue()) |message| {
             std.debug.print("Processing {} message from timestamp: {}\n", .{ message.type, message.timestamp });
 
@@ -155,8 +159,9 @@ fn processMessages() void {
                     std.debug.print("Processing PULL data with {} keys\n", .{message.data.count()});
                 },
             }
-        } else {
-            std.Thread.sleep(100 * std.time.ns_per_ms);
         }
+        // else {
+        //     std.Thread.sleep(100 * std.time.ns_per_ms);
+        // }
     }
 }

@@ -19,7 +19,6 @@ type Response<T> = {
 };
 // Helper function to make HTTP requests
 async function makeRequest<TRes>(endpoint: string, method: string, body?: any) {
-  await delay(10);
   const response = await fetch(`${SERVER_URL}${endpoint}`, {
     method,
     headers: {
