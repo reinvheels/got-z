@@ -61,6 +61,47 @@ const GraphStore = struct {
         const node = Node.init(owned_id, body);
         try self.nodes.put(owned_id, node);
     }
+
+    pub fn query(self: *Self, query_map: std.json.ObjectMap, allocator: std.mem.Allocator) !std.json.ObjectMap {
+        self.mutex.lock();
+        defer self.mutex.unlock();
+
+        var result = std.json.ObjectMap.init(allocator);
+
+        var query_iterator = query_map.iterator();
+        while (query_iterator.next()) |query_entry| {
+            const node_id = query_entry.key_ptr.*;
+
+            if (self.nodes.get(node_id)) |node| {
+                switch (query_entry.value_ptr.*) {
+                    .object => |query_props| {
+                        var filtered_props = std.json.ObjectMap.init(allocator);
+
+                        var prop_iterator = query_props.iterator();
+                        while (prop_iterator.next()) |prop_entry| {
+                            const prop_name = prop_entry.key_ptr.*;
+
+                            switch (prop_entry.value_ptr.*) {
+                                .bool => |should_include| {
+                                    if (should_include) {
+                                        if (node.body.get(prop_name)) |prop_value| {
+                                            try filtered_props.put(prop_name, prop_value);
+                                        }
+                                    }
+                                },
+                                else => {},
+                            }
+                        }
+
+                        try result.put(node_id, std.json.Value{ .object = filtered_props });
+                    },
+                    else => {},
+                }
+            }
+        }
+
+        return result;
+    }
 };
 
 var graph_store: GraphStore = undefined;
@@ -130,7 +171,16 @@ fn push(req: *httpz.Request, res: *httpz.Response) !void {
 fn pull(req: *httpz.Request, res: *httpz.Response) !void {
     if (try parseJsonRequest(req, res)) |obj| {
         std.log.info("PULL received JSON with {} keys", .{obj.count()});
+
+        const result = graph_store.query(obj, req.arena) catch |err| {
+            std.debug.print("Query error: {}\n", .{err});
+            res.status = 500;
+            try res.json(.{ .message = "Query failed" }, .{});
+            return;
+        };
+
+        const json_value = std.json.Value{ .object = result };
         res.status = 200;
-        try res.json(.{ .message = "Pull request processed successfully" }, .{});
+        try res.json(json_value, .{});
     }
 }
