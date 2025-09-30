@@ -62,40 +62,29 @@ const GraphStore = struct {
         try self.nodes.put(owned_id, node);
     }
 
-    pub fn query(self: *Self, query_map: std.json.ObjectMap, allocator: std.mem.Allocator) !std.json.ObjectMap {
+    pub fn query(self: *Self, node_id: []const u8, query_map: std.json.ObjectMap, allocator: std.mem.Allocator) !std.json.ObjectMap {
         self.mutex.lock();
         defer self.mutex.unlock();
 
         var result = std.json.ObjectMap.init(allocator);
 
-        var query_iterator = query_map.iterator();
-        while (query_iterator.next()) |query_entry| {
-            const node_id = query_entry.key_ptr.*;
+        var prop_iterator = query_map.iterator();
 
-            if (self.nodes.get(node_id)) |node| {
-                switch (query_entry.value_ptr.*) {
-                    .object => |query_props| {
-                        var filtered_props = std.json.ObjectMap.init(allocator);
+        if (self.nodes.get(node_id)) |node| {
+            while (prop_iterator.next()) |prop_entry| {
+                const prop_name = prop_entry.key_ptr.*;
 
-                        var prop_iterator = query_props.iterator();
-                        while (prop_iterator.next()) |prop_entry| {
-                            const prop_name = prop_entry.key_ptr.*;
-
-                            switch (prop_entry.value_ptr.*) {
-                                .bool => |should_include| {
-                                    if (should_include) {
-                                        if (node.body.get(prop_name)) |prop_value| {
-                                            try filtered_props.put(prop_name, prop_value);
-                                        }
-                                    }
-                                },
-                                else => {},
+                switch (prop_entry.value_ptr.*) {
+                    .bool => |should_include| {
+                        if (should_include) {
+                            if (node.body.get(prop_name)) |prop_value| {
+                                try result.put(prop_name, prop_value);
                             }
                         }
-
-                        try result.put(node_id, std.json.Value{ .object = filtered_props });
                     },
-                    else => {},
+                    else => {
+                        std.debug.print("Property query for {s} is not a bool, skipping\n", .{prop_name});
+                    },
                 }
             }
         }
@@ -156,7 +145,10 @@ fn push(req: *httpz.Request, res: *httpz.Response) !void {
             std.debug.print("Key: {s}, Value: {any}\n", .{ entry.key_ptr.*, entry.value_ptr.* });
             switch (entry.value_ptr.*) {
                 .object => |node_body| {
-                    try graph_store.addNode(entry.key_ptr.*, node_body);
+                    try graph_store.addNode(entry.key_ptr.*, node_body) catch |err| {
+                        std.debug.print("Error adding node {s}: {any}\n", .{ entry.key_ptr.*, err });
+                        continue;
+                    };
                 },
                 else => {
                     std.debug.print("Value for key {s} is not an object, skipping\n", .{entry.key_ptr.*});
@@ -172,12 +164,24 @@ fn pull(req: *httpz.Request, res: *httpz.Response) !void {
     if (try parseJsonRequest(req, res)) |obj| {
         std.log.info("PULL received JSON with {} keys", .{obj.count()});
 
-        const result = graph_store.query(obj, req.arena) catch |err| {
-            std.debug.print("Query error: {}\n", .{err});
-            res.status = 500;
-            try res.json(.{ .message = "Query failed" }, .{});
-            return;
-        };
+        var result = std.json.ObjectMap.init(req.arena);
+        var query_iterator = obj.iterator();
+        while (query_iterator.next()) |query_entry| {
+            const node_id = query_entry.key_ptr.*;
+
+            switch (query_entry.value_ptr.*) {
+                .object => |query_props| {
+                    const node_result = graph_store.query(node_id, query_props, req.arena) catch |err| {
+                        std.debug.print("Query error for node {s}: {any}\n", .{ node_id, err });
+                        continue;
+                    };
+                    try result.put(node_id, std.json.Value{ .object = node_result });
+                },
+                else => {
+                    std.debug.print("Query for node {s} is not an object, skipping\n", .{node_id});
+                },
+            }
+        }
 
         const json_value = std.json.Value{ .object = result };
         res.status = 200;
