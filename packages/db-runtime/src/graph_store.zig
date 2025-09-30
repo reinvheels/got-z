@@ -28,6 +28,7 @@ pub const StringContext = struct {
 
 pub const GraphStore = struct {
     nodes: std.HashMap([]const u8, Node, StringContext, std.hash_map.default_max_load_percentage),
+    edges: std.HashMap([]const u8, std.HashMap([]const u8, std.HashMap([]const u8, std.HashMap([]const u8, std.json.ObjectMap, StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage),
     allocator: std.mem.Allocator,
     mutex: std.Thread.Mutex,
 
@@ -36,6 +37,7 @@ pub const GraphStore = struct {
     pub fn init(allocator: std.mem.Allocator) Self {
         return Self{
             .nodes = std.HashMap([]const u8, Node, StringContext, std.hash_map.default_max_load_percentage).init(allocator),
+            .edges = std.HashMap([]const u8, std.HashMap([]const u8, std.HashMap([]const u8, std.HashMap([]const u8, std.json.ObjectMap, StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage).init(allocator),
             .allocator = allocator,
             .mutex = .{},
         };
@@ -59,6 +61,20 @@ pub const GraphStore = struct {
         const owned_id = try self.allocator.dupe(u8, id);
         const node = Node.init(owned_id, body);
         try self.nodes.put(owned_id, node);
+    }
+
+    pub fn addEdge(self: *Self, from_id: []const u8, edge_type: []const u8, to_id: []const u8, body: std.json.ObjectMap) !void {
+        self.mutex.lock();
+        defer self.mutex.unlock();
+
+        const from_edges = self.edges.get(from_id) orelse std.HashMap([]const u8, std.HashMap([]const u8, std.HashMap([]const u8, std.json.ObjectMap, StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage).init(self.allocator);
+        const edge_type_edges = from_edges.get(edge_type) orelse std.HashMap([]const u8, std.HashMap([]const u8, std.json.ObjectMap, StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage).init(self.allocator);
+        const to_edges = edge_type_edges.get(to_id) orelse std.HashMap([]const u8, std.json.ObjectMap, StringContext, std.hash_map.default_max_load_percentage).init(self.allocator);
+
+        try to_edges.put(to_id, body);
+        try edge_type_edges.put(edge_type, to_edges);
+        try from_edges.put(from_id, edge_type_edges);
+        try self.edges.put(from_id, from_edges);
     }
 
     pub fn query(self: *Self, node_id: []const u8, query_map: std.json.ObjectMap, allocator: std.mem.Allocator) !std.json.ObjectMap {
