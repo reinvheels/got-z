@@ -138,52 +138,53 @@ fn parseJsonRequest(req: *httpz.Request, res: *httpz.Response) !?std.json.Object
 }
 
 fn push(req: *httpz.Request, res: *httpz.Response) !void {
-    if (try parseJsonRequest(req, res)) |obj| {
-        var iterator = obj.iterator();
-        while (iterator.next()) |entry| {
-            std.debug.print("Key: {s}, Value: {any}\n", .{ entry.key_ptr.*, entry.value_ptr.* });
-            switch (entry.value_ptr.*) {
-                .object => |node_body| {
-                    graph_store.addNode(entry.key_ptr.*, node_body) catch |err| {
-                        std.debug.print("Error adding node {s}: {any}\n", .{ entry.key_ptr.*, err });
-                        continue;
-                    };
-                },
-                else => {
-                    std.debug.print("Value for key {s} is not an object, skipping\n", .{entry.key_ptr.*});
-                },
-            }
+    const body = try parseJsonRequest(req, res) orelse return;
+    std.log.info("PUSH received JSON with {} entries", .{body.count()});
+
+    var iterator = body.iterator();
+    while (iterator.next()) |entry| {
+        std.debug.print("Key: {s}, Value: {any}\n", .{ entry.key_ptr.*, entry.value_ptr.* });
+        switch (entry.value_ptr.*) {
+            .object => |node_body| {
+                graph_store.addNode(entry.key_ptr.*, node_body) catch |err| {
+                    std.debug.print("Error adding node {s}: {any}\n", .{ entry.key_ptr.*, err });
+                    continue;
+                };
+            },
+            else => {
+                std.debug.print("Value for key {s} is not an object, skipping\n", .{entry.key_ptr.*});
+            },
         }
-        res.status = 200;
-        try res.json(.{ .message = "Data received successfully" }, .{});
     }
+    res.status = 200;
+    try res.json(.{ .message = "Data received successfully" }, .{});
 }
 
 fn pull(req: *httpz.Request, res: *httpz.Response) !void {
-    if (try parseJsonRequest(req, res)) |obj| {
-        std.log.info("PULL received JSON with {} keys", .{obj.count()});
+    const body = try parseJsonRequest(req, res) orelse return;
+    std.log.info("PULL received JSON with {} keys", .{body.count()});
 
-        var result = std.json.ObjectMap.init(req.arena);
-        var query_iterator = obj.iterator();
-        while (query_iterator.next()) |query_entry| {
-            const node_id = query_entry.key_ptr.*;
+    var result = std.json.ObjectMap.init(req.arena);
+    var query_iterator = body.iterator();
+    while (query_iterator.next()) |query_entry| {
+        const node_id = query_entry.key_ptr.*;
 
-            switch (query_entry.value_ptr.*) {
-                .object => |query_props| {
-                    const node_result = graph_store.query(node_id, query_props, req.arena) catch |err| {
-                        std.debug.print("Query error for node {s}: {any}\n", .{ node_id, err });
-                        continue;
-                    };
-                    try result.put(node_id, std.json.Value{ .object = node_result });
-                },
-                else => {
-                    std.debug.print("Query for node {s} is not an object, skipping\n", .{node_id});
-                },
-            }
+        switch (query_entry.value_ptr.*) {
+            .object => |query_props| {
+                const node_result = graph_store.query(node_id, query_props, req.arena) catch |err| {
+                    std.debug.print("Query error for node {s}: {any}\n", .{ node_id, err });
+                    continue;
+                };
+                result.put(node_id, std.json.Value{ .object = node_result }) catch |err| {
+                    std.debug.print("Error adding result for node {s}: {any}\n", .{ node_id, err });
+                };
+            },
+            else => {
+                std.debug.print("Query for node {s} is not an object, skipping\n", .{node_id});
+            },
         }
-
-        const json_value = std.json.Value{ .object = result };
-        res.status = 200;
-        try res.json(json_value, .{});
     }
+
+    res.status = 200;
+    try res.json(std.json.Value{ .object = result }, .{});
 }
