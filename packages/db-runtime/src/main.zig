@@ -70,22 +70,21 @@ const GraphStore = struct {
 
         var prop_iterator = query_map.iterator();
 
-        if (self.nodes.get(node_id)) |node| {
-            while (prop_iterator.next()) |prop_entry| {
-                const prop_name = prop_entry.key_ptr.*;
+        const node = self.nodes.get(node_id) orelse
+            return error.NodeNotFound;
 
-                switch (prop_entry.value_ptr.*) {
-                    .bool => |should_include| {
-                        if (should_include) {
-                            if (node.body.get(prop_name)) |prop_value| {
-                                try result.put(prop_name, prop_value);
-                            }
-                        }
-                    },
-                    else => {
-                        std.debug.print("Property query for {s} is not a bool, skipping\n", .{prop_name});
-                    },
-                }
+        while (prop_iterator.next()) |prop_entry| {
+            const prop_name = prop_entry.key_ptr.*;
+
+            switch (prop_entry.value_ptr.*) {
+                .bool => |should_include| {
+                    if (!should_include) continue;
+                    const prop_value = node.body.get(prop_name) orelse continue;
+                    try result.put(prop_name, prop_value);
+                },
+                else => {
+                    std.debug.print("Property query for {s} is not a bool, skipping\n", .{prop_name});
+                },
             }
         }
 
@@ -145,7 +144,7 @@ fn push(req: *httpz.Request, res: *httpz.Response) !void {
             std.debug.print("Key: {s}, Value: {any}\n", .{ entry.key_ptr.*, entry.value_ptr.* });
             switch (entry.value_ptr.*) {
                 .object => |node_body| {
-                    try graph_store.addNode(entry.key_ptr.*, node_body) catch |err| {
+                    graph_store.addNode(entry.key_ptr.*, node_body) catch |err| {
                         std.debug.print("Error adding node {s}: {any}\n", .{ entry.key_ptr.*, err });
                         continue;
                     };
