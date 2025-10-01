@@ -33,12 +33,12 @@ pub const GraphStore = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        var iterator = self.nodes.iterator();
-        while (iterator.next()) |entry| {
+        var node_iterator = self.nodes.iterator();
+        while (node_iterator.next()) |entry| {
             self.allocator.free(entry.key_ptr.*);
         }
-        iterator = self.edges.iterator();
-        while (iterator.next()) |entry| {
+        var edge_iterator = self.edges.iterator();
+        while (edge_iterator.next()) |entry| {
             self.allocator.free(entry.key_ptr.*);
         }
         self.edges.deinit();
