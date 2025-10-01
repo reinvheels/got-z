@@ -1,19 +1,5 @@
 const std = @import("std");
 
-pub const Node = struct {
-    id: []const u8,
-    body: std.json.ObjectMap,
-
-    const Self = @This();
-
-    pub fn init(id: []const u8, body: std.json.ObjectMap) Self {
-        return Self{
-            .id = id,
-            .body = body,
-        };
-    }
-};
-
 pub const StringContext = struct {
     pub fn hash(self: @This(), s: []const u8) u64 {
         _ = self;
@@ -27,7 +13,7 @@ pub const StringContext = struct {
 };
 
 pub const GraphStore = struct {
-    nodes: std.HashMap([]const u8, Node, StringContext, std.hash_map.default_max_load_percentage),
+    nodes: std.HashMap([]const u8, std.json.ObjectMap, StringContext, std.hash_map.default_max_load_percentage),
     edges: std.HashMap([]const u8, std.HashMap([]const u8, std.HashMap([]const u8, std.HashMap([]const u8, std.json.ObjectMap, StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage),
     allocator: std.mem.Allocator,
     mutex: std.Thread.Mutex,
@@ -36,7 +22,7 @@ pub const GraphStore = struct {
 
     pub fn init(allocator: std.mem.Allocator) Self {
         return Self{
-            .nodes = std.HashMap([]const u8, Node, StringContext, std.hash_map.default_max_load_percentage).init(allocator),
+            .nodes = std.HashMap([]const u8, std.json.ObjectMap, StringContext, std.hash_map.default_max_load_percentage).init(allocator),
             .edges = std.HashMap([]const u8, std.HashMap([]const u8, std.HashMap([]const u8, std.HashMap([]const u8, std.json.ObjectMap, StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage).init(allocator),
             .allocator = allocator,
             .mutex = .{},
@@ -54,13 +40,19 @@ pub const GraphStore = struct {
         self.nodes.deinit();
     }
 
-    pub fn addNode(self: *Self, id: []const u8, body: std.json.ObjectMap) !void {
+    pub fn upsertNode(self: *Self, id: []const u8, body: std.json.ObjectMap) !void {
         self.mutex.lock();
         defer self.mutex.unlock();
 
         const owned_id = try self.allocator.dupe(u8, id);
-        const node = Node.init(owned_id, body);
-        try self.nodes.put(owned_id, node);
+        if (self.nodes.getPtr(owned_id)) |existing| {
+            var iterator = body.iterator();
+            while (iterator.next()) |entry| {
+                try existing.put(entry.key_ptr.*, entry.value_ptr.*);
+            }
+        } else {
+            try self.nodes.put(owned_id, body);
+        }
     }
 
     pub fn addEdge(self: *Self, from_id: []const u8, edge_type: []const u8, to_id: []const u8, body: std.json.ObjectMap) !void {
@@ -85,7 +77,7 @@ pub const GraphStore = struct {
 
         var prop_iterator = query_map.iterator();
 
-        const node = self.nodes.get(node_id) orelse
+        const node_body = self.nodes.get(node_id) orelse
             return error.NodeNotFound;
 
         while (prop_iterator.next()) |prop_entry| {
@@ -94,7 +86,7 @@ pub const GraphStore = struct {
             switch (prop_entry.value_ptr.*) {
                 .bool => |should_include| {
                     if (!should_include) continue;
-                    const prop_value = node.body.get(prop_name) orelse continue;
+                    const prop_value = node_body.get(prop_name) orelse continue;
                     try result.put(prop_name, prop_value);
                 },
                 else => {

@@ -39,7 +39,7 @@ fn push(req: *httpz.Request, res: *httpz.Response) !void {
         std.debug.print("Key: {s}, Value: {any}\n", .{ entry.key_ptr.*, entry.value_ptr.* });
         switch (entry.value_ptr.*) {
             .object => |node_body| {
-                graph.addNode(entry.key_ptr.*, node_body) catch |err| {
+                graph.upsertNode(entry.key_ptr.*, node_body) catch |err| {
                     std.debug.print("Error adding node {s}: {any}\n", .{ entry.key_ptr.*, err });
                     continue;
                 };

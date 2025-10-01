@@ -77,6 +77,38 @@ describe("Basic node operations", () => {
       },
     });
   });
+
+  describe("Merge properties in existing node", () => {
+    beforeEach(async () => {
+      const pushRequest: PushRequest = {
+        "node-1": {
+          property1: "value1.1",
+          property3: "value3",
+        },
+      };
+      await makeRequest("/push", "POST", pushRequest);
+    });
+
+    test("POST /pull - query merged node properties", async () => {
+      const pullRequest: PullRequest = {
+        "node-1": {
+          property1: true,
+          property2: true,
+          property3: true,
+        },
+      };
+
+      const response = await makeRequest("/pull", "POST", pullRequest);
+
+      expect(response.data).toEqual({
+        "node-1": {
+          property1: "value1.1",
+          property2: "value2",
+          property3: "value3",
+        },
+      });
+    });
+  });
 });
 
 describe("Node operations with edges", () => {
