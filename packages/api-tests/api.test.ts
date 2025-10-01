@@ -158,6 +158,83 @@ describe("Node operations with edges", () => {
       },
     });
   });
+
+  describe("Merge edge properties", () => {
+    beforeEach(async () => {
+      const pushRequest: PushRequest = {
+        "node-1": {
+          [`${EdgeDirection.OUT}relationship1`]: {
+            "node-2": {
+              [`${Prefixes.EDGE_PROPERTY}property1`]: "value1.1",
+              [`${Prefixes.EDGE_PROPERTY}property2`]: "value2",
+            },
+          },
+        },
+      };
+      await makeRequest("/push", "POST", pushRequest);
+    });
+
+    test("POST /pull - query merged edge properties", async () => {
+      const pullRequest: PullRequest = {
+        "node-1": {
+          [`${EdgeDirection.OUT}relationship1`]: {
+            "node-2": {
+              [`${Prefixes.EDGE_PROPERTY}property1`]: true,
+              [`${Prefixes.EDGE_PROPERTY}property2`]: true,
+              [`${Prefixes.EDGE_PROPERTY}order`]: true,
+            },
+          },
+        },
+      };
+
+      const response = await makeRequest("/pull", "POST", pullRequest);
+      expect(response.data).toEqual({
+        "node-1": {
+          [`${EdgeDirection.OUT}relationship1`]: {
+            "node-2": {
+              [`${Prefixes.EDGE_PROPERTY}property1`]: "value1.1",
+              [`${Prefixes.EDGE_PROPERTY}property2`]: "value2",
+              [`${Prefixes.EDGE_PROPERTY}order`]: 1,
+            },
+          },
+        },
+      });
+    });
+  });
+
+  describe("Query connected node properties", () => {
+    beforeEach(async () => {
+      const pushRequest: PushRequest = {
+        "node-2": {
+          property1: "value1-node2",
+          property2: "value2-node2",
+        },
+      };
+      await makeRequest("/push", "POST", pushRequest);
+    });
+
+    test("POST /pull - query connected node properties", async () => {
+      const pullRequest: PullRequest = {
+        "node-1": {
+          [`${EdgeDirection.OUT}relationship1`]: {
+            "node-2": {
+              property1: true,
+            },
+          },
+        },
+      };
+      const response = await makeRequest("/pull", "POST", pullRequest);
+      expect(response.data).toEqual({
+        "node-1": {
+          [`${EdgeDirection.OUT}relationship1`]: {
+            "node-2": {
+              property1: "value1-node2",
+            },
+          },
+        },
+      });
+    });
+  });
 });
 
 describe("Node operations with rights", () => {
