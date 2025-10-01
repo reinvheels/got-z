@@ -37,6 +37,11 @@ pub const GraphStore = struct {
         while (iterator.next()) |entry| {
             self.allocator.free(entry.key_ptr.*);
         }
+        iterator = self.edges.iterator();
+        while (iterator.next()) |entry| {
+            self.allocator.free(entry.key_ptr.*);
+        }
+        self.edges.deinit();
         self.nodes.deinit();
     }
 
