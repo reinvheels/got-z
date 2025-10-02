@@ -1,5 +1,13 @@
 const std = @import("std");
 
+fn NestedHashMap(comptime depth: u32, comptime ValueType: type) type {
+    if (depth == 0) {
+        return ValueType;
+    } else {
+        return std.HashMap([]const u8, NestedHashMap(depth - 1, ValueType), StringContext, std.hash_map.default_max_load_percentage);
+    }
+}
+
 pub const StringContext = struct {
     pub fn hash(self: @This(), s: []const u8) u64 {
         _ = self;
@@ -13,8 +21,8 @@ pub const StringContext = struct {
 };
 
 pub const GraphStore = struct {
-    nodes: std.HashMap([]const u8, std.json.ObjectMap, StringContext, std.hash_map.default_max_load_percentage),
-    edges: std.HashMap([]const u8, std.HashMap([]const u8, std.HashMap([]const u8, std.HashMap([]const u8, std.json.ObjectMap, StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage),
+    nodes: NestedHashMap(1, std.json.ObjectMap),
+    edges: NestedHashMap(4, std.json.ObjectMap),
     allocator: std.mem.Allocator,
     mutex: std.Thread.Mutex,
 
@@ -22,8 +30,8 @@ pub const GraphStore = struct {
 
     pub fn init(allocator: std.mem.Allocator) Self {
         return Self{
-            .nodes = std.HashMap([]const u8, std.json.ObjectMap, StringContext, std.hash_map.default_max_load_percentage).init(allocator),
-            .edges = std.HashMap([]const u8, std.HashMap([]const u8, std.HashMap([]const u8, std.HashMap([]const u8, std.json.ObjectMap, StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage).init(allocator),
+            .nodes = NestedHashMap(1, std.json.ObjectMap).init(allocator),
+            .edges = NestedHashMap(4, std.json.ObjectMap).init(allocator),
             .allocator = allocator,
             .mutex = .{},
         };
