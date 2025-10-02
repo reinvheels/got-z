@@ -137,9 +137,7 @@ describe("Node operations with edges", () => {
       "node-1": {
         property1: true,
         [`${EdgeDirection.OUT}relationship1`]: {
-          "node-2": {
-            [`${Prefixes.EDGE_PROPERTY}order`]: true,
-          },
+          [`${Prefixes.EDGE_PROPERTY}order`]: true,
         },
       },
     };
@@ -178,11 +176,9 @@ describe("Node operations with edges", () => {
       const pullRequest: PullRequest = {
         "node-1": {
           [`${EdgeDirection.OUT}relationship1`]: {
-            "node-2": {
-              [`${Prefixes.EDGE_PROPERTY}property1`]: true,
-              [`${Prefixes.EDGE_PROPERTY}property2`]: true,
-              [`${Prefixes.EDGE_PROPERTY}order`]: true,
-            },
+            [`${Prefixes.EDGE_PROPERTY}property1`]: true,
+            [`${Prefixes.EDGE_PROPERTY}property2`]: true,
+            [`${Prefixes.EDGE_PROPERTY}order`]: true,
           },
         },
       };
@@ -217,9 +213,7 @@ describe("Node operations with edges", () => {
       const pullRequest: PullRequest = {
         "node-1": {
           [`${EdgeDirection.OUT}relationship1`]: {
-            "node-2": {
-              property1: true,
-            },
+            property1: true,
           },
         },
       };
