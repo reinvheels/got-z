@@ -32,9 +32,18 @@ pub fn main() !void {
 
 fn push(req: *httpz.Request, res: *httpz.Response) !void {
     const body = try httpz_util.parseJsonRequest(req, res) orelse return;
-    std.log.info("PUSH received JSON with {} entries", .{body.count()});
+    const obj = switch (body) {
+        .object => |obj| obj,
+        else => {
+            std.debug.print("PUSH request body is not an object\n", .{});
+            res.status = 400;
+            try res.json(.{ .message = "Request body must be a JSON object" }, .{});
+            return;
+        },
+    };
+    std.log.info("PUSH received JSON with {} keys", .{obj.count()});
 
-    var iterator = body.iterator();
+    var iterator = obj.iterator();
     while (iterator.next()) |entry| {
         std.debug.print("Key: {s}, Value: {any}\n", .{ entry.key_ptr.*, entry.value_ptr.* });
         switch (entry.value_ptr.*) {
@@ -55,10 +64,20 @@ fn push(req: *httpz.Request, res: *httpz.Response) !void {
 
 fn pull(req: *httpz.Request, res: *httpz.Response) !void {
     const body = try httpz_util.parseJsonRequest(req, res) orelse return;
-    std.log.info("PULL received JSON with {} keys", .{body.count()});
+
+    const obj = switch (body) {
+        .object => |obj| obj,
+        else => {
+            std.debug.print("PULL request body is not an object\n", .{});
+            res.status = 400;
+            try res.json(.{ .message = "Request body must be a JSON object" }, .{});
+            return;
+        },
+    };
+    std.log.info("PULL received JSON with {} keys", .{obj.count()});
 
     var result = std.json.ObjectMap.init(req.arena);
-    var query_iterator = body.iterator();
+    var query_iterator = obj.iterator();
     while (query_iterator.next()) |query_entry| {
         const node_id = query_entry.key_ptr.*;
 
