@@ -1,28 +1,10 @@
 const std = @import("std");
-
-fn NestedHashMap(comptime depth: u32, comptime ValueType: type) type {
-    if (depth == 0) {
-        return ValueType;
-    } else {
-        return std.HashMap([]const u8, NestedHashMap(depth - 1, ValueType), StringContext, std.hash_map.default_max_load_percentage);
-    }
-}
-
-pub const StringContext = struct {
-    pub fn hash(self: @This(), s: []const u8) u64 {
-        _ = self;
-        return std.hash_map.hashString(s);
-    }
-
-    pub fn eql(self: @This(), a: []const u8, b: []const u8) bool {
-        _ = self;
-        return std.mem.eql(u8, a, b);
-    }
-};
+const util = @import("util/util.zig");
+const dynamic = @import("util/dynamic.zig");
 
 pub const GraphStore = struct {
-    nodes: NestedHashMap(1, std.json.ObjectMap),
-    edges: NestedHashMap(4, std.json.ObjectMap),
+    nodes: dynamic.Dynamic(2, std.json.Value),
+    edges: dynamic.Dynamic(4, std.json.ObjectMap),
     allocator: std.mem.Allocator,
     mutex: std.Thread.Mutex,
 
@@ -30,8 +12,8 @@ pub const GraphStore = struct {
 
     pub fn init(allocator: std.mem.Allocator) Self {
         return Self{
-            .nodes = NestedHashMap(1, std.json.ObjectMap).init(allocator),
-            .edges = NestedHashMap(4, std.json.ObjectMap).init(allocator),
+            .nodes = dynamic.Dynamic(2, std.json.Value).init(allocator),
+            .edges = dynamic.Dynamic(4, std.json.ObjectMap).init(allocator),
             .allocator = allocator,
             .mutex = .{},
         };
@@ -57,14 +39,12 @@ pub const GraphStore = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        const owned_id = try self.allocator.dupe(u8, id);
-        if (self.nodes.getPtr(owned_id)) |existing| {
-            var iterator = body.iterator();
-            while (iterator.next()) |entry| {
-                try existing.put(entry.key_ptr.*, entry.value_ptr.*);
-            }
-        } else {
-            try self.nodes.put(owned_id, body);
+        var iterator = body.iterator();
+        while (iterator.next()) |entry| {
+            self.nodes.write(.{ id, entry.key_ptr.* }, entry.value_ptr.*) catch |err| {
+                std.debug.print("Error adding property {s} to node {s}: {any}\n", .{ entry.key_ptr.*, id, err });
+                return err;
+            };
         }
     }
 
@@ -72,9 +52,9 @@ pub const GraphStore = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        const from_edges = self.edges.get(from_id) orelse std.HashMap([]const u8, std.HashMap([]const u8, std.HashMap([]const u8, std.json.ObjectMap, StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage).init(self.allocator);
-        const edge_type_edges = from_edges.get(edge_type) orelse std.HashMap([]const u8, std.HashMap([]const u8, std.json.ObjectMap, StringContext, std.hash_map.default_max_load_percentage), StringContext, std.hash_map.default_max_load_percentage).init(self.allocator);
-        const to_edges = edge_type_edges.get(to_id) orelse std.HashMap([]const u8, std.json.ObjectMap, StringContext, std.hash_map.default_max_load_percentage).init(self.allocator);
+        const from_edges = self.edges.get(from_id) orelse std.HashMap([]const u8, std.HashMap([]const u8, std.HashMap([]const u8, std.json.ObjectMap, util.StringContext, std.hash_map.default_max_load_percentage), util.StringContext, std.hash_map.default_max_load_percentage), util.StringContext, std.hash_map.default_max_load_percentage).init(self.allocator);
+        const edge_type_edges = from_edges.get(edge_type) orelse std.HashMap([]const u8, std.HashMap([]const u8, std.json.ObjectMap, util.StringContext, std.hash_map.default_max_load_percentage), util.StringContext, std.hash_map.default_max_load_percentage).init(self.allocator);
+        const to_edges = edge_type_edges.get(to_id) orelse std.HashMap([]const u8, std.json.ObjectMap, util.StringContext, std.hash_map.default_max_load_percentage).init(self.allocator);
 
         try to_edges.put(to_id, body);
         try edge_type_edges.put(edge_type, to_edges);
