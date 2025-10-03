@@ -1,10 +1,10 @@
 const std = @import("std");
 const util = @import("util/util.zig");
-const dynamic = @import("util/dynamic.zig");
+const json = @import("util/json.zig");
 
 pub const GraphStore = struct {
-    nodes: dynamic.Dynamic(2, std.json.Value),
-    edges: dynamic.Dynamic(4, std.json.ObjectMap),
+    nodes: json.Json(2),
+    edges: json.Json(4),
     allocator: std.mem.Allocator,
     mutex: std.Thread.Mutex,
 
@@ -12,8 +12,8 @@ pub const GraphStore = struct {
 
     pub fn init(allocator: std.mem.Allocator) Self {
         return Self{
-            .nodes = dynamic.Dynamic(2, std.json.Value).init(allocator),
-            .edges = dynamic.Dynamic(4, std.json.ObjectMap).init(allocator),
+            .nodes = json.Json(2).init(allocator),
+            .edges = json.Json(4).init(allocator),
             .allocator = allocator,
             .mutex = .{},
         };
@@ -36,56 +36,145 @@ pub const GraphStore = struct {
     }
 
     pub fn upsertNode(self: *Self, id: []const u8, body: std.json.ObjectMap) !void {
-        self.mutex.lock();
-        defer self.mutex.unlock();
-
         var iterator = body.iterator();
         while (iterator.next()) |entry| {
-            self.nodes.write(.{ id, entry.key_ptr.* }, entry.value_ptr.*) catch |err| {
-                std.debug.print("Error adding property {s} to node {s}: {any}\n", .{ entry.key_ptr.*, id, err });
+            if (entry.key_ptr.*[0] == '>') {
+                const relationship_type = entry.key_ptr.*;
+                switch (entry.value_ptr.*) {
+                    .object => |targets| {
+                        var target_iterator = targets.iterator();
+                        while (target_iterator.next()) |target_entry| {
+                            try self.upsertEdge(id, relationship_type, target_entry.key_ptr.*, target_entry.value_ptr.*);
+                        }
+                    },
+                    else => {
+                        std.debug.print("Relationship {s} value is not an object, skipping\n", .{relationship_type});
+                    },
+                }
+            } else {
+                self.nodes.write(.{ id, entry.key_ptr.* }, entry.value_ptr.*) catch |err| {
+                    std.debug.print("Error adding property {s} to node {s}: {any}\n", .{ entry.key_ptr.*, id, err });
+                    return err;
+                };
+            }
+        }
+    }
+
+    pub fn upsertEdge(self: *Self, from_id: []const u8, edge_type: []const u8, to_id: []const u8, body: std.json.Value) !void {
+        const obj = switch (body) {
+            .object => |obj| obj,
+            else => {
+                std.debug.print("Edge body is not an object\n", .{});
+                return error.InvalidEdgeBody;
+            },
+        };
+
+        var iterator = obj.iterator();
+        while (iterator.next()) |entry| {
+            if (entry.key_ptr.*[0] != '-') continue;
+            self.edges.write(.{ from_id, edge_type, to_id, entry.key_ptr.* }, entry.value_ptr.*) catch |err| {
+                std.debug.print("Error adding property {s} to edge {s} -> {s} ({s}): {any}\n", .{ entry.key_ptr.*, from_id, to_id, edge_type, err });
                 return err;
             };
         }
     }
 
-    pub fn addEdge(self: *Self, from_id: []const u8, edge_type: []const u8, to_id: []const u8, body: std.json.ObjectMap) !void {
-        self.mutex.lock();
-        defer self.mutex.unlock();
+    pub fn query(self: *Self, node_id: []const u8, query_map: std.json.ObjectMap, allocator: std.mem.Allocator) !std.json.ObjectMap {
+        var result = try self.queryNode(node_id, query_map, allocator);
+        const edges_result = try self.queryEdges(node_id, query_map, allocator);
+        try util.mergeJsonMap(&result, &edges_result);
 
-        const from_edges = self.edges.get(from_id) orelse std.HashMap([]const u8, std.HashMap([]const u8, std.HashMap([]const u8, std.json.ObjectMap, util.StringContext, std.hash_map.default_max_load_percentage), util.StringContext, std.hash_map.default_max_load_percentage), util.StringContext, std.hash_map.default_max_load_percentage).init(self.allocator);
-        const edge_type_edges = from_edges.get(edge_type) orelse std.HashMap([]const u8, std.HashMap([]const u8, std.json.ObjectMap, util.StringContext, std.hash_map.default_max_load_percentage), util.StringContext, std.hash_map.default_max_load_percentage).init(self.allocator);
-        const to_edges = edge_type_edges.get(to_id) orelse std.HashMap([]const u8, std.json.ObjectMap, util.StringContext, std.hash_map.default_max_load_percentage).init(self.allocator);
-
-        try to_edges.put(to_id, body);
-        try edge_type_edges.put(edge_type, to_edges);
-        try from_edges.put(from_id, edge_type_edges);
-        try self.edges.put(from_id, from_edges);
+        return result;
     }
 
-    pub fn query(self: *Self, node_id: []const u8, query_map: std.json.ObjectMap, allocator: std.mem.Allocator) !std.json.ObjectMap {
-        self.mutex.lock();
-        defer self.mutex.unlock();
-
+    pub fn queryNode(self: *Self, node_id: []const u8, query_map: std.json.ObjectMap, allocator: std.mem.Allocator) !std.json.ObjectMap {
         var result = std.json.ObjectMap.init(allocator);
 
         var prop_iterator = query_map.iterator();
 
-        const node_body = self.nodes.get(node_id) orelse
+        const node_obj = self.nodes.get(node_id) orelse
             return error.NodeNotFound;
+        const node_body = switch (node_obj) {
+            .object => |obj| obj,
+            else => return error.InvalidNodeStructure,
+        };
 
         while (prop_iterator.next()) |prop_entry| {
             const prop_name = prop_entry.key_ptr.*;
+            if (prop_name[0] == '>') continue;
 
             switch (prop_entry.value_ptr.*) {
                 .bool => |should_include| {
-                    if (!should_include) continue;
-                    const prop_value = node_body.get(prop_name) orelse continue;
-                    try result.put(prop_name, prop_value);
+                    if (should_include) {
+                        const prop_value = node_body.get(prop_name) orelse continue;
+                        try result.put(prop_name, prop_value);
+                    }
                 },
                 else => {
                     std.debug.print("Property query for {s} is not a bool, skipping\n", .{prop_name});
                 },
             }
+        }
+
+        return result;
+    }
+
+    pub fn queryEdges(self: *Self, from_id: []const u8, query_map: std.json.ObjectMap, allocator: std.mem.Allocator) !std.json.ObjectMap {
+        var result = std.json.ObjectMap.init(allocator);
+
+        var edge_type_iterator = query_map.iterator();
+        while (edge_type_iterator.next()) |edge_type_entry| {
+            const edge_type = edge_type_entry.key_ptr.*;
+            if (edge_type[0] != '>') continue;
+            const edge_query = switch (edge_type_entry.value_ptr.*) {
+                .object => |obj| obj,
+                else => {
+                    std.debug.print("Edge query for {s} is not an object, skipping\n", .{edge_type});
+                    continue;
+                },
+            };
+
+            const edges = self.queryEdge(from_id, edge_type, edge_query, allocator) catch |err| {
+                std.debug.print("Error querying edges of type {s} from node {s}: {any}\n", .{ edge_type, from_id, err });
+                continue;
+            };
+            try result.put(edge_type, std.json.Value{ .object = edges });
+        }
+
+        return result;
+    }
+
+    pub fn queryEdge(self: *Self, from_id: []const u8, edge_type: []const u8, query_map: std.json.ObjectMap, allocator: std.mem.Allocator) !std.json.ObjectMap {
+        var result = std.json.ObjectMap.init(allocator);
+
+        var to_edges = self.edges.read(.{ from_id, edge_type }) orelse
+            return error.NoEdgesFound;
+
+        var edges_iterator = to_edges.iterator();
+        while (edges_iterator.next()) |edge_entry| {
+            const to_id = edge_entry.key_ptr.*;
+            const edge_obj = switch (edge_entry.value_ptr.*) {
+                .object => |obj| obj,
+                else => continue,
+            };
+
+            var query_edge_iterator = query_map.iterator();
+            var result_edge_body = std.json.ObjectMap.init(allocator);
+            while (query_edge_iterator.next()) |query_edge_entry| {
+                const prop_name = query_edge_entry.key_ptr.*;
+                if (prop_name[0] != '-') continue;
+                switch (query_edge_entry.value_ptr.*) {
+                    .bool => |should_include| {
+                        if (!should_include) continue;
+                        const prop_value = edge_obj.get(prop_name) orelse continue;
+                        try result_edge_body.put(prop_name, prop_value);
+                    },
+                    else => {
+                        std.debug.print("Edge property query for {s} is not a bool, skipping\n", .{prop_name});
+                    },
+                }
+            }
+            try result.put(to_id, std.json.Value{ .object = result_edge_body });
         }
 
         return result;

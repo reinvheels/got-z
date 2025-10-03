@@ -58,6 +58,7 @@ fn push(req: *httpz.Request, res: *httpz.Response) !void {
             },
         }
     }
+    std.json.Value.dump(std.json.Value{ .object = graph.edges.map });
     res.status = 200;
     try res.json(.{ .message = "Data received successfully" }, .{});
 }

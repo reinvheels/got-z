@@ -11,3 +11,10 @@ pub const StringContext = struct {
         return std.mem.eql(u8, a, b);
     }
 };
+
+pub fn mergeJsonMap(left: *std.json.ObjectMap, right: *const std.json.ObjectMap) !void {
+    var right_iter = right.*.iterator();
+    while (right_iter.next()) |entry| {
+        try left.*.put(entry.key_ptr.*, entry.value_ptr.*);
+    }
+}
