@@ -170,6 +170,8 @@ pub const GraphStore = struct {
                     },
                 }
             }
+            var result_node_body = try self.queryNode(to_id, query_map, allocator);
+            try util.mergeJsonMap(&result_edge_body, &result_node_body);
             try result.put(to_id, std.json.Value{ .object = result_edge_body });
         }
 
