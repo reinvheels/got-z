@@ -19,8 +19,8 @@ pub fn mergeJsonMap(left: *std.json.ObjectMap, right: *const std.json.ObjectMap)
     }
 }
 
-pub fn dumpJsonMap(message: []const u8, map: *const std.json.ObjectMap) void {
+pub fn dumpJsonValue(message: []const u8, jsonValue: std.json.Value) void {
     std.debug.print("{s} DUMP\n", .{message});
-    std.json.Value.dump(std.json.Value{ .object = map.* });
+    std.json.Value.dump(jsonValue);
     std.debug.print("\n", .{});
 }

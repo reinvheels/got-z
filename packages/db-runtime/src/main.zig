@@ -2,6 +2,7 @@ const std = @import("std");
 const httpz = @import("httpz");
 const graph_store = @import("graph_store.zig");
 const httpz_util = @import("util/httpz_util.zig");
+const util = @import("util/util.zig");
 
 var graph: graph_store.GraphStore = undefined;
 
@@ -42,10 +43,10 @@ fn push(req: *httpz.Request, res: *httpz.Response) !void {
         },
     };
     std.log.info("PUSH received JSON with {} keys", .{obj.count()});
+    util.dumpJsonValue("PUSH entry", std.json.Value{ .object = obj });
 
     var iterator = obj.iterator();
     while (iterator.next()) |entry| {
-        std.debug.print("Key: {s}, Value: {any}\n", .{ entry.key_ptr.*, entry.value_ptr.* });
         switch (entry.value_ptr.*) {
             .object => |node_body| {
                 graph.upsertNode(entry.key_ptr.*, node_body) catch |err| {
