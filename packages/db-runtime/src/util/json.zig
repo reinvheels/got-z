@@ -20,15 +20,24 @@ pub fn Json(comptime depth: u32) type {
             self.map.deinit();
         }
 
-        pub fn get(self: *Self, key: []const u8) ?std.json.Value {
+        pub fn get(self: *Self, key: []const u8) ?ValueType() {
             return self.map.get(key);
+            // }
+        }
+
+        pub fn getPtr(self: *Self, key: []const u8) ?*ValueType() {
+            return self.map.getPtr(key);
+        }
+
+        pub fn put(self: *Self, key: []const u8, value: ValueType()) !void {
+            try self.map.put(key, value);
         }
 
         pub fn iterator(self: *Self) std.json.ObjectMap.Iterator {
             return self.map.iterator();
         }
 
-        pub fn write(self: *Self, path: anytype, value: ValueType(@TypeOf(path))) !void {
+        pub fn write(self: *Self, path: anytype, value: LeafTypeWrite(@TypeOf(path))) !void {
             if (depth == 0) {
                 @compileError("Cannot write path to depth 0 Json");
             }
@@ -51,15 +60,15 @@ pub fn Json(comptime depth: u32) type {
             }
 
             var current_map = &self.map;
-            for (path_array, 0..) |key, i| {
+            inline for (path_array, 0..) |key, i| {
                 if (i == path_array.len - 1) {
-                    try current_map.put(key, value);
+                    try current_map.*.put(key, value);
                 } else {
-                    var entry = current_map.getPtr(key);
+                    var entry = current_map.*.getPtr(key);
                     if (entry == null) {
                         const new_map = std.json.ObjectMap.init(self.allocator);
-                        try current_map.put(key, std.json.Value{ .object = new_map });
-                        entry = current_map.getPtr(key);
+                        try current_map.*.put(key, std.json.Value{ .object = new_map });
+                        entry = current_map.*.getPtr(key);
                     }
                     if (entry) |e| {
                         if (e.* == .object) {
@@ -70,7 +79,7 @@ pub fn Json(comptime depth: u32) type {
             }
         }
 
-        pub fn read(self: *Self, path: anytype) ?ValueType(@TypeOf(path)) {
+        pub fn read(self: *Self, path: anytype) ?LeafTypeRead(@TypeOf(path)) {
             const path_info = @typeInfo(@TypeOf(path));
             if (path_info != .@"struct" or !path_info.@"struct".is_tuple) {
                 @compileError("Path must be a tuple of strings");
@@ -83,18 +92,24 @@ pub fn Json(comptime depth: u32) type {
                 @compileError("Path length must not exceed map depth");
             }
 
-            var path_array: [path_len][]const u8 = undefined;
-            inline for (path, 0..) |segment, i| {
-                path_array[i] = segment;
-            }
-
+            // var path_array: [path_len][]const u8 = undefined;
             var current_map = &self.map;
-            inline for (path_array, 0..) |key, i| {
+            // inline for (path, 0..) |segment, i| {
+            //     path_array[i] = segment;
+            // }
+
+            inline for (path, 0..) |key, i| {
+                std.debug.print("Reading path: {s}\n", .{key});
                 var entry = current_map.getPtr(key) orelse {
                     return null;
                 };
-                if (i == path_array.len) {
-                    return entry.*;
+
+                if (i == path.len - 1) {
+                    // @compileLog(.{ depth, i, path.len });
+                    return switch (entry.*) {
+                        .object => |obj| obj,
+                        else => null,
+                    };
                 } else {
                     if (entry.* == .object) {
                         current_map = &entry.object;
@@ -104,12 +119,30 @@ pub fn Json(comptime depth: u32) type {
             return null;
         }
 
-        fn ValueType(comptime PathType: type) type {
+        fn LeafTypeWrite(comptime PathType: type) type {
             const field_count = @typeInfo(PathType).@"struct".fields.len;
             if (depth == field_count) {
                 return std.json.Value;
             } else {
                 return Json(depth - field_count);
+            }
+        }
+
+        fn LeafTypeRead(comptime PathType: type) type {
+            const field_count = @typeInfo(PathType).@"struct".fields.len;
+            // @compileLog(.{ depth, field_count });
+            if (depth == field_count) {
+                return std.json.Value;
+            } else {
+                return std.json.ObjectMap;
+            }
+        }
+
+        fn ValueType() type {
+            if (depth == 0) {
+                return std.json.Value;
+            } else {
+                return std.json.ObjectMap;
             }
         }
     };

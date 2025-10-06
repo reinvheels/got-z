@@ -92,12 +92,8 @@ pub const GraphStore = struct {
 
         var prop_iterator = query_map.iterator();
 
-        const node_obj = self.nodes.get(node_id) orelse
+        const node_body = self.nodes.read(.{node_id}) orelse
             return error.NodeNotFound;
-        const node_body = switch (node_obj) {
-            .object => |obj| obj,
-            else => return error.InvalidNodeStructure,
-        };
 
         while (prop_iterator.next()) |prop_entry| {
             const prop_name = prop_entry.key_ptr.*;
