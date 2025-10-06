@@ -1,0 +1,2 @@
+curl -X POST localhost:3001/push -d @push.json -o push-out.json
+curl -X POST localhost:3001/pull -d @pull.json -o pull-out.json

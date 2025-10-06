@@ -61,3 +61,5 @@ Thumbs.db
 # package-lock.json
 # pnpm-lock.yaml
 bun.lockb
+
+test/*.json
