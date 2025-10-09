@@ -121,6 +121,7 @@ describe("Node operations with edges", () => {
           "node-2": {
             [`${Prefixes.EDGE_PROPERTY}property1`]: "value1",
             [`${Prefixes.EDGE_PROPERTY}order`]: 1,
+            [`nodeProperty`]: 123,
           },
         },
       },
@@ -154,6 +155,31 @@ describe("Node operations with edges", () => {
           },
         },
       },
+    });
+  });
+
+  describe("Nested node property", () => {
+    test("POST /pull - query edge with nested node property", async () => {
+      const pullRequest: PullRequest = {
+        "node-1": {
+          [`${EdgeDirection.OUT}relationship1`]: {
+            nodeProperty: true,
+          },
+        },
+      };
+
+      const response = await makeRequest("/pull", "POST", pullRequest);
+
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual({
+        "node-1": {
+          [`${EdgeDirection.OUT}relationship1`]: {
+            "node-2": {
+              nodeProperty: 123,
+            },
+          },
+        },
+      });
     });
   });
 
