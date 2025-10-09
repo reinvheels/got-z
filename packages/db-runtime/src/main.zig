@@ -62,6 +62,7 @@ fn push(req: *httpz.Request, res: *httpz.Response) !void {
 
     util.dumpJsonValue("PUSH nodes", std.json.Value{ .object = graph.nodes.map });
     util.dumpJsonValue("PUSH edges", std.json.Value{ .object = graph.edges.map });
+    std.debug.print("\n", .{});
 
     res.status = 200;
     try res.json(.{ .message = "Data received successfully" }, .{});
@@ -104,6 +105,8 @@ fn pull(req: *httpz.Request, res: *httpz.Response) !void {
             },
         }
     }
+
+    std.debug.print("\n", .{});
 
     res.status = 200;
     try res.json(std.json.Value{ .object = result }, .{});
