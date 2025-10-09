@@ -54,14 +54,9 @@ pub fn Json(comptime depth: u32) type {
                 @compileError("Path length must not exceed map depth");
             }
 
-            var path_array: [path_len][]const u8 = undefined;
-            inline for (path, 0..) |segment, i| {
-                path_array[i] = segment;
-            }
-
             var current_map = &self.map;
-            inline for (path_array, 0..) |key, i| {
-                if (i == path_array.len - 1) {
+            inline for (path, 0..) |key, i| {
+                if (i == path.len - 1) {
                     if (@TypeOf(value) == std.json.ObjectMap) {
                         try current_map.*.put(key, std.json.Value{ .object = value });
                     } else {
