@@ -60,12 +60,18 @@ fn push(req: *httpz.Request, res: *httpz.Response) !void {
         }
     }
 
+    util.dumpJsonValue("PUSH nodes", std.json.Value{ .object = graph.nodes.map });
+    util.dumpJsonValue("PUSH edges", std.json.Value{ .object = graph.edges.map });
+
     res.status = 200;
     try res.json(.{ .message = "Data received successfully" }, .{});
 }
 
 fn pull(req: *httpz.Request, res: *httpz.Response) !void {
     const body = try httpz_util.parseJsonRequest(req, res) orelse return;
+
+    util.dumpJsonValue("PULL nodes", std.json.Value{ .object = graph.nodes.map });
+    util.dumpJsonValue("PULL edges", std.json.Value{ .object = graph.edges.map });
 
     const obj = switch (body) {
         .object => |obj| obj,

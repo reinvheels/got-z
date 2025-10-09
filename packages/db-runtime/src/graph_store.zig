@@ -71,11 +71,17 @@ pub const GraphStore = struct {
 
         var iterator = obj.iterator();
         while (iterator.next()) |entry| {
-            if (entry.key_ptr.*[0] != '-') continue;
-            self.edges.write(.{ from_id, edge_type, to_id, entry.key_ptr.* }, entry.value_ptr.*) catch |err| {
-                std.debug.print("Error adding property {s} to edge {s} -> {s} ({s}): {any}\n", .{ entry.key_ptr.*, from_id, to_id, edge_type, err });
-                return err;
-            };
+            if (entry.key_ptr.*[0] == '-') {
+                self.edges.write(.{ from_id, edge_type, to_id, entry.key_ptr.* }, entry.value_ptr.*) catch |err| {
+                    std.debug.print("Error adding property {s} to edge {s} -> {s} ({s}): {any}\n", .{ entry.key_ptr.*, from_id, to_id, edge_type, err });
+                    return err;
+                };
+            } else {
+                self.nodes.write(.{ to_id, entry.key_ptr.* }, entry.value_ptr.*) catch |err| {
+                    std.debug.print("Error adding property {s} to node {s}: {any}\n", .{ entry.key_ptr.*, to_id, err });
+                    return err;
+                };
+            }
         }
     }
 
