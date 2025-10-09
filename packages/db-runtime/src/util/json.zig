@@ -37,7 +37,7 @@ pub fn Json(comptime depth: u32) type {
             return self.map.iterator();
         }
 
-        pub fn write(self: *Self, path: anytype, value: LeafTypeWrite(@TypeOf(path))) !void {
+        pub fn write(self: *Self, path: anytype, value: LeafType(@TypeOf(path))) !void {
             if (depth == 0) {
                 @compileError("Cannot write path to depth 0 Json");
             }
@@ -62,7 +62,11 @@ pub fn Json(comptime depth: u32) type {
             var current_map = &self.map;
             inline for (path_array, 0..) |key, i| {
                 if (i == path_array.len - 1) {
-                    try current_map.*.put(key, value);
+                    if (@TypeOf(value) == std.json.ObjectMap) {
+                        try current_map.*.put(key, std.json.Value{ .object = value });
+                    } else {
+                        try current_map.*.put(key, value);
+                    }
                 } else {
                     var entry = current_map.*.getPtr(key);
                     if (entry == null) {
@@ -79,7 +83,7 @@ pub fn Json(comptime depth: u32) type {
             }
         }
 
-        pub fn read(self: *Self, path: anytype) ?LeafTypeRead(@TypeOf(path)) {
+        pub fn read(self: *Self, path: anytype) ?LeafType(@TypeOf(path)) {
             const path_info = @typeInfo(@TypeOf(path));
             if (path_info != .@"struct" or !path_info.@"struct".is_tuple) {
                 @compileError("Path must be a tuple of strings");
@@ -119,16 +123,7 @@ pub fn Json(comptime depth: u32) type {
             return null;
         }
 
-        fn LeafTypeWrite(comptime PathType: type) type {
-            const field_count = @typeInfo(PathType).@"struct".fields.len;
-            if (depth == field_count) {
-                return std.json.Value;
-            } else {
-                return Json(depth - field_count);
-            }
-        }
-
-        fn LeafTypeRead(comptime PathType: type) type {
+        fn LeafType(comptime PathType: type) type {
             const field_count = @typeInfo(PathType).@"struct".fields.len;
             // @compileLog(.{ depth, field_count });
             if (depth == field_count) {

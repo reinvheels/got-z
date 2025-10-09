@@ -36,6 +36,12 @@ pub const GraphStore = struct {
     }
 
     pub fn upsertNode(self: *Self, id: []const u8, body: std.json.ObjectMap) !void {
+        if (self.nodes.read(.{id}) == null) {
+            self.nodes.write(.{id}, std.json.ObjectMap.init(self.allocator)) catch |err| {
+                std.debug.print("Error creating node {s}: {any}\n", .{ id, err });
+                return err;
+            };
+        }
         var iterator = body.iterator();
         while (iterator.next()) |entry| {
             if (entry.key_ptr.*[0] == '>') {
@@ -61,13 +67,34 @@ pub const GraphStore = struct {
     }
 
     pub fn upsertEdge(self: *Self, from_id: []const u8, edge_type: []const u8, to_id: []const u8, body: std.json.Value) !void {
-        const obj = switch (body) {
+        if (self.nodes.read(.{to_id}) == null) {
+            self.nodes.write(.{to_id}, std.json.ObjectMap.init(self.allocator)) catch |err| {
+                std.debug.print("Error creating target node {s}: {any}\n", .{ to_id, err });
+                return err;
+            };
+        }
+
+        const obj = obj: switch (body) {
             .object => |obj| obj,
+            .bool => |is_edge| {
+                if (is_edge) {
+                    break :obj std.json.ObjectMap.init(self.allocator);
+                } else {
+                    return error.InvalidEdgeBody;
+                }
+            },
             else => {
                 std.debug.print("Edge body is not an object\n", .{});
                 return error.InvalidEdgeBody;
             },
         };
+
+        if (self.edges.read(.{ from_id, edge_type, to_id }) == null) {
+            self.edges.write(.{ from_id, edge_type, to_id }, std.json.ObjectMap.init(self.allocator)) catch |err| {
+                std.debug.print("Error creating edge {s} -> {s} ({s}): {any}\n", .{ from_id, to_id, edge_type, err });
+                return err;
+            };
+        }
 
         var iterator = obj.iterator();
         while (iterator.next()) |entry| {
@@ -128,8 +155,15 @@ pub const GraphStore = struct {
         while (edge_type_iterator.next()) |edge_type_entry| {
             const edge_type = edge_type_entry.key_ptr.*;
             if (edge_type[0] != '>') continue;
-            const edge_query = switch (edge_type_entry.value_ptr.*) {
+            const edge_query = qry: switch (edge_type_entry.value_ptr.*) {
                 .object => |obj| obj,
+                .bool => |include| {
+                    if (include) {
+                        break :qry std.json.ObjectMap.init(allocator);
+                    } else {
+                        continue;
+                    }
+                },
                 else => {
                     std.debug.print("Edge query for {s} is not an object, skipping\n", .{edge_type});
                     continue;
