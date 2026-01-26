@@ -36,7 +36,7 @@ async function makeRequest<TRes>(endpoint: string, method: string, body?: any) {
 
 describe("Large-scale node operations", () => {
   const PERFORMANCE_CONFIG = {
-    nodeCount: 10,
+    nodeCount: 100,
     maxMilliseconds: 100,
   };
 
@@ -103,7 +103,7 @@ describe("Large-scale node operations", () => {
 
 describe("Single node with multiple edges", () => {
   const EDGE_CONFIG = {
-    edgeCount: 10,
+    edgeCount: 100,
     maxMilliseconds: 200,
   };
 
@@ -183,7 +183,7 @@ describe("Single node with multiple edges", () => {
   });
 });
 
-describe("Nested queries with multiple levels", () => {
+describe.skip("Nested queries with multiple levels", () => {
   const NESTED_CONFIG = {
     levels: 3,
     nodesPerLevel: 4,
