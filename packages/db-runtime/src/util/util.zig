@@ -19,8 +19,13 @@ pub fn mergeJsonMap(left: *std.json.ObjectMap, right: *const std.json.ObjectMap)
     }
 }
 
+const builtin = @import("builtin");
+const enable_json_dump = builtin.mode == .Debug;
+
 pub fn dumpJsonValue(message: []const u8, jsonValue: std.json.Value) void {
-    std.debug.print("{s} DUMP\n", .{message});
-    std.json.Value.dump(jsonValue);
-    std.debug.print("\n", .{});
+    if (enable_json_dump) {
+        std.debug.print("{s} DUMP\n", .{message});
+        std.json.Value.dump(jsonValue);
+        std.debug.print("\n", .{});
+    }
 }
