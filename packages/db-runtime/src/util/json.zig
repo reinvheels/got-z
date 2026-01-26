@@ -38,6 +38,15 @@ pub fn Json(comptime depth: u32) type {
         }
 
         pub fn write(self: *Self, path: anytype, value: LeafType(@TypeOf(path))) !void {
+            std.debug.print("WRITING PATH: ", .{});
+            inline for (path, 0..) |segment, i| {
+                if (i > 0) std.debug.print(" -> ", .{});
+                std.debug.print("{s}", .{segment});
+            }
+            std.debug.print("\n", .{});
+
+            defer util.dumpJsonValue("WRITING JSON", std.json.Value{ .object = self.map });
+
             if (depth == 0) {
                 @compileError("Cannot write path to depth 0 Json");
             }

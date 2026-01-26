@@ -45,18 +45,23 @@ fn push(req: *httpz.Request, res: *httpz.Response) !void {
     std.log.info("PUSH received JSON with {} keys", .{obj.count()});
     util.dumpJsonValue("PUSH entry", std.json.Value{ .object = obj });
 
-    var iterator = obj.iterator();
-    while (iterator.next()) |entry| {
-        switch (entry.value_ptr.*) {
-            .object => |node_body| {
-                graph.upsertNode(entry.key_ptr.*, node_body) catch |err| {
-                    std.debug.print("Error adding node {s}: {any}\n", .{ entry.key_ptr.*, err });
-                    continue;
-                };
-            },
-            else => {
-                std.debug.print("Value for key {s} is not an object, skipping\n", .{entry.key_ptr.*});
-            },
+    {
+        graph.mutex.lock();
+        defer graph.mutex.unlock();
+
+        var iterator = obj.iterator();
+        while (iterator.next()) |entry| {
+            switch (entry.value_ptr.*) {
+                .object => |node_body| {
+                    graph.upsertNode(entry.key_ptr.*, node_body) catch |err| {
+                        std.debug.print("Error adding node {s}: {any}\n", .{ entry.key_ptr.*, err });
+                        continue;
+                    };
+                },
+                else => {
+                    std.debug.print("Value for key {s} is not an object, skipping\n", .{entry.key_ptr.*});
+                },
+            }
         }
     }
 
@@ -86,23 +91,28 @@ fn pull(req: *httpz.Request, res: *httpz.Response) !void {
     std.log.info("PULL received JSON with {} keys", .{obj.count()});
 
     var result = std.json.ObjectMap.init(req.arena);
-    var query_iterator = obj.iterator();
-    while (query_iterator.next()) |query_entry| {
-        const node_id = query_entry.key_ptr.*;
+    {
+        graph.mutex.lock();
+        defer graph.mutex.unlock();
 
-        switch (query_entry.value_ptr.*) {
-            .object => |query_props| {
-                const node_result = graph.query(node_id, query_props, req.arena) catch |err| {
-                    std.debug.print("Query error for node {s}: {any}\n", .{ node_id, err });
-                    continue;
-                };
-                result.put(node_id, std.json.Value{ .object = node_result }) catch |err| {
-                    std.debug.print("Error adding result for node {s}: {any}\n", .{ node_id, err });
-                };
-            },
-            else => {
-                std.debug.print("Query for node {s} is not an object, skipping\n", .{node_id});
-            },
+        var query_iterator = obj.iterator();
+        while (query_iterator.next()) |query_entry| {
+            const node_id = query_entry.key_ptr.*;
+
+            switch (query_entry.value_ptr.*) {
+                .object => |query_props| {
+                    const node_result = graph.query(node_id, query_props, req.arena) catch |err| {
+                        std.debug.print("Query error for node {s}: {any}\n", .{ node_id, err });
+                        continue;
+                    };
+                    result.put(node_id, std.json.Value{ .object = node_result }) catch |err| {
+                        std.debug.print("Error adding result for node {s}: {any}\n", .{ node_id, err });
+                    };
+                },
+                else => {
+                    std.debug.print("Query for node {s} is not an object, skipping\n", .{node_id});
+                },
+            }
         }
     }
 
