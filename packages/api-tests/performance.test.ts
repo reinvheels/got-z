@@ -36,8 +36,9 @@ async function makeRequest<TRes>(endpoint: string, method: string, body?: any) {
 
 describe("Large-scale node operations", () => {
   const PERFORMANCE_CONFIG = {
-    nodeCount: 20000,
-    maxMilliseconds: 100,
+    nodeCount: 100000,
+    pushMaxMs: 500,
+    pullMaxMs: 200,
   };
 
   let pushRequest: PushRequest = {};
@@ -60,9 +61,9 @@ describe("Large-scale node operations", () => {
     milliseconds = endTime - startTime;
   });
 
-  test(`POST /push - performance under load < ${PERFORMANCE_CONFIG.maxMilliseconds}ms`, () => {
+  test(`POST /push - performance under load < ${PERFORMANCE_CONFIG.pushMaxMs}ms`, () => {
     expect(milliseconds).toBeLessThanOrEqual(
-      PERFORMANCE_CONFIG.maxMilliseconds
+      PERFORMANCE_CONFIG.pushMaxMs
     );
   });
 
@@ -85,9 +86,9 @@ describe("Large-scale node operations", () => {
       milliseconds = endTime - startTime;
     });
 
-    test(`POST /pull - performance under load < ${PERFORMANCE_CONFIG.maxMilliseconds}ms`, () => {
+    test(`POST /pull - performance under load < ${PERFORMANCE_CONFIG.pullMaxMs}ms`, () => {
       expect(milliseconds).toBeLessThanOrEqual(
-        PERFORMANCE_CONFIG.maxMilliseconds
+        PERFORMANCE_CONFIG.pullMaxMs
       );
     });
 
@@ -103,8 +104,9 @@ describe("Large-scale node operations", () => {
 
 describe("Single node with multiple edges", () => {
   const EDGE_CONFIG = {
-    edgeCount: 20000,
-    maxMilliseconds: 200,
+    edgeCount: 100000,
+    pushMaxMs: 1000,
+    pullMaxMs: 200,
   };
 
   const rel = `${EdgeDirection.OUT}relationship1`;
@@ -133,8 +135,8 @@ describe("Single node with multiple edges", () => {
     milliseconds = endTime - startTime;
   });
 
-  test(`POST /push - single node with ${EDGE_CONFIG.edgeCount} edges performance < ${EDGE_CONFIG.maxMilliseconds}ms`, () => {
-    expect(milliseconds).toBeLessThanOrEqual(EDGE_CONFIG.maxMilliseconds);
+  test(`POST /push - single node with ${EDGE_CONFIG.edgeCount} edges performance < ${EDGE_CONFIG.pushMaxMs}ms`, () => {
+    expect(milliseconds).toBeLessThanOrEqual(EDGE_CONFIG.pushMaxMs);
   });
 
   describe("Pull operations with edges", () => {
@@ -155,8 +157,8 @@ describe("Single node with multiple edges", () => {
       milliseconds = endTime - startTime;
     });
 
-    test(`POST /pull - performance under load < ${EDGE_CONFIG.maxMilliseconds}ms`, () => {
-      expect(milliseconds).toBeLessThanOrEqual(EDGE_CONFIG.maxMilliseconds);
+    test(`POST /pull - performance under load < ${EDGE_CONFIG.pullMaxMs}ms`, () => {
+      expect(milliseconds).toBeLessThanOrEqual(EDGE_CONFIG.pullMaxMs);
     });
 
     test("POST /pull - query edges and connected nodes", async () => {
