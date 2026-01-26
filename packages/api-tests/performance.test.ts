@@ -36,7 +36,7 @@ async function makeRequest<TRes>(endpoint: string, method: string, body?: any) {
 
 describe("Large-scale node operations", () => {
   const PERFORMANCE_CONFIG = {
-    nodeCount: 100,
+    nodeCount: 20000,
     maxMilliseconds: 100,
   };
 
@@ -103,7 +103,7 @@ describe("Large-scale node operations", () => {
 
 describe("Single node with multiple edges", () => {
   const EDGE_CONFIG = {
-    edgeCount: 100,
+    edgeCount: 20000,
     maxMilliseconds: 200,
   };
 
