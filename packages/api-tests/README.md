@@ -4,7 +4,7 @@ HTTP integration tests for the Got-Z graph database API endpoints.
 
 ## Overview
 
-These tests use a built-in dummy HTTP server that simulates the Got-Z API responses. No external server is required - the tests are completely self-contained.
+These tests start the built Got-Z DB runtime and exercise the real HTTP API. No external server is required because each suite starts and stops its own runtime process.
 
 ## Running Tests
 
@@ -16,15 +16,18 @@ bun test
 bun test --watch
 
 # Run specific test file
-bun test api.test.ts
+bun test src/api.test.ts
 ```
+
+Build `../db-runtime/zig-out/bin/db-runtime` before running these tests.
 
 ## Test Architecture
 
 The tests automatically:
-1. Spin up a dummy HTTP server on port 3001 before running tests
-2. Mock realistic API responses for both endpoints
-3. Clean up the server after tests complete
+1. Choose a free localhost port
+2. Start the built DB runtime in a temporary data directory
+3. Exercise the real `/push` and `/pull` endpoints
+4. Clean up the runtime process and temporary directory after tests complete
 
 No external dependencies or running servers required!
 
@@ -49,14 +52,15 @@ The tests focus on HTTP behavior and endpoint availability:
 
 **Note:** Request/response schema validation is tested separately in the `api-spec` package.
 
-## Mock Server Features
+## Runtime Harness
 
-The dummy server provides:
-- Mock JSON responses for testing HTTP behavior
-- Proper HTTP status codes (200, 400, 405)
-- Content-Type validation
-- HTTP method validation
-- JSON response formatting
+`src/runtime-harness.ts` provides shared process management for all suites:
+- Runtime binary checks
+- Free port allocation
+- Temporary data directories
+- Startup health checks
+- Runtime cleanup
+- WAL entry waiting for persistence tests
 
 ## Test Philosophy
 

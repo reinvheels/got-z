@@ -1,4 +1,4 @@
-import { test, expect, describe, beforeEach } from "bun:test";
+import { test, expect, describe, beforeAll, afterAll, beforeEach } from "bun:test";
 import {
   Rights,
   EdgeDirection,
@@ -8,10 +8,23 @@ import {
   PushResponse,
 } from "@got-z/api-spec";
 import { delay, getPermutations } from "@got-z/util";
+import {
+  cleanupRuntimeHarness,
+  createRuntimeHarness,
+  type RuntimeHarness,
+} from "./runtime-harness";
 
-// Dummy server setup
-const TEST_PORT = 3001;
-const SERVER_URL = `http://localhost:${TEST_PORT}`;
+let harness: RuntimeHarness | undefined;
+let serverUrl: string;
+
+beforeAll(async () => {
+  harness = await createRuntimeHarness("got-z-api");
+  serverUrl = harness.url;
+});
+
+afterAll(async () => {
+  if (harness) await cleanupRuntimeHarness(harness);
+});
 
 type Response<T> = {
   status: number;
@@ -20,7 +33,7 @@ type Response<T> = {
 // Helper function to make HTTP requests
 async function makeRequest<TRes>(endpoint: string, method: string, body?: any) {
   await delay(10);
-  const response = await fetch(`${SERVER_URL}${endpoint}`, {
+  const response = await fetch(`${serverUrl}${endpoint}`, {
     method,
     headers: {
       "Content-Type": "application/json",

@@ -8,7 +8,7 @@ The repo is split into four workspace packages:
 
 - `packages/db-runtime`: Zig HTTP runtime on port `3001`; implements `/push` and `/pull`.
 - `packages/api-spec`: TypeScript API schema/types.
-- `packages/api-tests`: Bun integration and performance tests against `localhost:3001`.
+- `packages/api-tests`: Bun integration and performance tests that start the DB runtime on free localhost ports.
 - `packages/util`: Shared TypeScript helpers and prototype extensions used by tests/spec code.
 
 Planning and endpoint notes live under `plan/`. Sample request/response fixtures live under `test/`.
@@ -96,13 +96,11 @@ ZIG_GLOBAL_CACHE_DIR=/private/tmp/zig-cache-0.17 zig build
 
 ## API Tests
 
-The legacy API and error tests expect a real server on `localhost:3001`; despite the README wording, there is no in-test dummy server setup for those files.
-
-Start the DB runtime in `ReleaseFast` mode before running API tests:
+Build the DB runtime in `ReleaseFast` mode before running API tests:
 
 ```sh
 cd packages/db-runtime
-ZIG_GLOBAL_CACHE_DIR=/private/tmp/zig-cache-0.17 zig build -Doptimize=ReleaseFast run
+ZIG_GLOBAL_CACHE_DIR=/private/tmp/zig-cache-0.17 zig build -Doptimize=ReleaseFast
 ```
 
 Then run the API tests from the repo root:
@@ -111,28 +109,30 @@ Then run the API tests from the repo root:
 bun run test:api
 ```
 
-Run the self-contained persistence or performance tests after building `packages/db-runtime/zig-out/bin/db-runtime`:
+Run individual suites after building `packages/db-runtime/zig-out/bin/db-runtime`:
 
 ```sh
 cd packages/api-tests
-bun test persistence.test.ts
-bun test performance.test.ts
+bun test src/api.test.ts
+bun test src/error.test.ts
+bun test src/persistence.test.ts
+bun test src/performance.test.ts
 ```
 
-The persistence and performance tests start the built runtime themselves, choose a free localhost port, run from a temporary data directory, and clean up their runtime process after the test run. The persistence test additionally restarts the process before verifying stored data.
+All API test suites use `src/runtime-harness.ts`: they start the built runtime themselves, choose a free localhost port, run from a temporary data directory, and clean up their runtime process after the test run. The persistence test additionally restarts the process before verifying stored data.
 
 Use `ReleaseFast` for these tests. The Debug build emits large JSON dumps during the performance tests and can block or time out.
 
 Expected current result:
 
 ```text
-22 pass
+24 pass
 9 skip
 0 fail
-Ran 31 tests across 3 files
+Ran 33 tests across 4 files
 ```
 
-After running the legacy API/error tests, stop the local runtime so port `3001` is not left occupied.
+The harness should leave no runtime listening after tests finish.
 
 ## Current Runtime Notes
 

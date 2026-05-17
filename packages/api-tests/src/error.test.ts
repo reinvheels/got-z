@@ -1,12 +1,25 @@
-import { test, expect } from "bun:test";
+import { test, expect, beforeAll, afterAll } from "bun:test";
+import {
+  cleanupRuntimeHarness,
+  createRuntimeHarness,
+  type RuntimeHarness,
+} from "./runtime-harness";
 
-// Dummy server setup
-const TEST_PORT = 3001;
-const SERVER_URL = `http://localhost:${TEST_PORT}`;
+let harness: RuntimeHarness | undefined;
+let serverUrl: string;
+
+beforeAll(async () => {
+  harness = await createRuntimeHarness("got-z-error");
+  serverUrl = harness.url;
+});
+
+afterAll(async () => {
+  if (harness) await cleanupRuntimeHarness(harness);
+});
 
 // Error handling tests
 test("POST /push - invalid content type", async () => {
-  const response = await fetch(`${SERVER_URL}/push`, {
+  const response = await fetch(`${serverUrl}/push`, {
     method: "POST",
     headers: {
       "Content-Type": "text/plain",
@@ -20,7 +33,7 @@ test("POST /push - invalid content type", async () => {
 });
 
 test("POST /pull - invalid content type", async () => {
-  const response = await fetch(`${SERVER_URL}/pull`, {
+  const response = await fetch(`${serverUrl}/pull`, {
     method: "POST",
     headers: {
       "Content-Type": "text/plain",
@@ -34,7 +47,7 @@ test("POST /pull - invalid content type", async () => {
 });
 
 test("GET /push - method not allowed", async () => {
-  const response = await fetch(`${SERVER_URL}/push`, {
+  const response = await fetch(`${serverUrl}/push`, {
     method: "GET",
   });
 
@@ -44,7 +57,7 @@ test("GET /push - method not allowed", async () => {
 });
 
 test("GET /pull - method not allowed", async () => {
-  const response = await fetch(`${SERVER_URL}/pull`, {
+  const response = await fetch(`${serverUrl}/pull`, {
     method: "GET",
   });
 
@@ -55,7 +68,7 @@ test("GET /pull - method not allowed", async () => {
 
 // Server availability test
 test("server is running", async () => {
-  const response = await fetch(SERVER_URL);
+  const response = await fetch(serverUrl);
   expect(response.status).toBe(200);
   const data = await response.json();
   expect(data.message).toBe("Server running");
