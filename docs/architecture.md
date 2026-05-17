@@ -1,6 +1,6 @@
 # Architecture
 
-Got is organized as a Bun monorepo with a Zig database runtime.
+got is organized as a Bun monorepo with a Zig database runtime.
 
 ## Packages
 

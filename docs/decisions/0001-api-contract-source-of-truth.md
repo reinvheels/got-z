@@ -6,7 +6,7 @@ Accepted.
 
 ## Decision
 
-Got should use a TypeScript API contract in `packages/api-spec` as the source of truth for concrete API grammar, examples, generated Markdown, machine-readable JSON contract output, and conformance tests.
+got should use a TypeScript API contract in `packages/api-spec` as the source of truth for concrete API grammar, examples, generated Markdown, machine-readable JSON contract output, and conformance tests.
 
 ## Context
 

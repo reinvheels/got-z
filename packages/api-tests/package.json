@@ -1,7 +1,7 @@
 {
   "name": "@got/api-tests",
   "version": "0.1.0",
-  "description": "API tests for Got graph database",
+  "description": "API tests for got graph database",
   "main": "index.ts",
   "type": "module",
   "scripts": {

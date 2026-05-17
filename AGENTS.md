@@ -1,8 +1,8 @@
-# Got Agent Notes
+# got Agent Notes
 
 ## Project Overview
 
-Got is a Bun workspace for a graph data API backed by a Zig database runtime.
+got is a Bun workspace for a graph data API backed by a Zig database runtime.
 
 The repo is split into four workspace packages:
 
@@ -15,7 +15,7 @@ High-level documentation lives under `docs/`. Sample request/response fixtures l
 
 ## Vision
 
-Got should become a graph database that can act as a second brain for an AI agent harness. The long-term goal is to provide durable, queryable memory for agents: a structured replacement for Obsidian-style note graphs, optimized for relationships, retrieval, and long-running context rather than human-facing markdown documents.
+got should become a graph database that can act as a second brain for an AI agent harness. The long-term goal is to provide durable, queryable memory for agents: a structured replacement for Obsidian-style note graphs, optimized for relationships, retrieval, and long-running context rather than human-facing markdown documents.
 
 ## Setup
 

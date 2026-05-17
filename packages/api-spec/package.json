@@ -1,7 +1,7 @@
 {
   "name": "@got/api-spec",
   "version": "0.1.0",
-  "description": "API specification for Got graph database",
+  "description": "API specification for got graph database",
   "main": "src/index.ts",
   "type": "module",
   "scripts": {

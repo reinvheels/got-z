@@ -1,10 +1,10 @@
 # API Tests
 
-HTTP integration tests for the Got graph database API endpoints.
+HTTP integration tests for the got graph database API endpoints.
 
 ## Overview
 
-These tests start the built Got DB runtime and exercise the real HTTP API. No external server is required because each suite starts and stops its own runtime process.
+These tests start the built got DB runtime and exercise the real HTTP API. No external server is required because each suite starts and stops its own runtime process.
 
 ## Running Tests
 

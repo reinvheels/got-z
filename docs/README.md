@@ -1,6 +1,6 @@
-# Got Documentation
+# got Documentation
 
-Got is a graph database project for durable, queryable agent memory. The intended role is a second brain for AI agent harnesses: a structured alternative to Obsidian-style note graphs, optimized for relationships, retrieval, and long-running context.
+got is a graph database project for durable, queryable agent memory. The intended role is a second brain for AI agent harnesses: a structured alternative to Obsidian-style note graphs, optimized for relationships, retrieval, and long-running context.
 
 This directory contains high-level documentation only. Concrete API grammar, request/response examples, and conformance examples should be generated from the API contract in `packages/api-spec` so the docs, types, and tests do not drift apart.
 

@@ -3,11 +3,11 @@ import { defineGotContract } from "./define";
 export const gotApiContract = defineGotContract({
   openapi: "3.1.0",
   info: {
-    title: "Got Graph API",
+    title: "got Graph API",
     version: "0.1.0",
     status: "partial",
     description:
-      "OpenAPI-inspired contract for the Got graph API, extended with graph-specific key grammar and semantic rules.",
+      "OpenAPI-inspired contract for the got graph API, extended with graph-specific key grammar and semantic rules.",
   },
 
   paths: {
