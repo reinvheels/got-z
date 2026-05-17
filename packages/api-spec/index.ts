@@ -1,4 +1,14 @@
 import { z } from 'zod';
+export { gotzApiContract } from './src/contract';
+export type {
+  ContractStatus,
+  ExampleSpec,
+  GotzApiContract,
+  KeyGrammarSpec,
+  OperationSpec,
+  PathItemSpec,
+} from './src/define';
+export { defineGotzContract } from './src/define';
 
 // Node schema
 export const NodeSchema = z.record(z.string(), z.any());
