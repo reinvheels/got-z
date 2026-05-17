@@ -80,6 +80,12 @@ zig build run
 ```
 
 The runtime listens on `localhost:3001`.
+Override the port with `GOT_Z_PORT=<port>` or `--port <port>`:
+
+```sh
+GOT_Z_PORT=3099 zig build run
+zig-out/bin/db-runtime --port 3099
+```
 
 If Zig fails because it cannot write to the global cache in a sandboxed environment, set the cache to a writable path:
 
@@ -103,6 +109,15 @@ Then run the API tests from the repo root:
 ```sh
 bun run test:api
 ```
+
+Run only the persistence contract test after building `packages/db-runtime/zig-out/bin/db-runtime`:
+
+```sh
+cd packages/api-tests
+bun test persistence.test.ts
+```
+
+The persistence test starts the built runtime itself, chooses a free localhost port, runs from a temporary data directory, pushes data, restarts the process, then pulls and verifies the data.
 
 Use `ReleaseFast` for these tests. The Debug build emits large JSON dumps during the performance tests and can block or time out.
 
