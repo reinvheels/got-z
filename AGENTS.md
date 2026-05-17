@@ -13,6 +13,10 @@ The repo is split into four workspace packages:
 
 Planning and endpoint notes live under `plan/`. Sample request/response fixtures live under `test/`.
 
+## Vision
+
+Got-Z should become a graph database that can act as a second brain for an AI agent harness. The long-term goal is to provide durable, queryable memory for agents: a structured replacement for Obsidian-style note graphs, optimized for relationships, retrieval, and long-running context rather than human-facing markdown documents.
+
 ## Setup
 
 Install JS dependencies from the repo root:
