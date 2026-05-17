@@ -144,7 +144,7 @@ fn handlePush(self: *Server, stream: net.Stream, body: []const u8, alloc: std.me
         self.graph.lock();
         defer self.graph.unlock();
 
-        try self.storage_engine.appendPush(obj);
+        try self.storage_engine.appendPush(obj, body);
         self.graph.applyPush(obj);
     }
 

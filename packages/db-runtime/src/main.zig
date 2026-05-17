@@ -22,6 +22,7 @@ pub fn main(init: std.process.Init) !void {
 
     var noop_storage = storage.NoopEngine{};
     var wal_storage = storage.JsonWalEngine.init(allocator, io);
+    if (config.persistent) try wal_storage.start();
     const storage_engine = if (config.persistent) wal_storage.engine() else noop_storage.engine();
     defer storage_engine.deinit();
 
