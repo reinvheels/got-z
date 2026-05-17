@@ -2,12 +2,12 @@
   "name": "@got-z/api-spec",
   "version": "0.1.0",
   "description": "API specification for Got-Z graph database",
-  "main": "index.ts",
+  "main": "src/index.ts",
   "type": "module",
   "scripts": {
-    "test": "bun test",
-    "build": "bun build index.ts --outdir=dist",
-    "dev": "bun run --watch index.ts",
+    "test": "bun run build",
+    "build": "bun build src/index.ts --outdir=dist",
+    "dev": "bun run --watch src/index.ts",
     "clean": "rm -rf dist"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-export { gotzApiContract } from './src/contract';
+export { gotzApiContract } from './contract';
 export type {
   ContractStatus,
   ExampleSpec,
@@ -7,8 +7,8 @@ export type {
   KeyGrammarSpec,
   OperationSpec,
   PathItemSpec,
-} from './src/define';
-export { defineGotzContract } from './src/define';
+} from './define';
+export { defineGotzContract } from './define';
 
 // Node schema
 export const NodeSchema = z.record(z.string(), z.any());
