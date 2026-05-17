@@ -82,10 +82,10 @@ test("runtime persists pushed graph data across restart", async () => {
   });
 });
 
-test("runtime is volatile by default", async () => {
+test("runtime is ephemeral by default", async () => {
   await ensureRuntimeBinary();
 
-  const dataDir = await createTempDataDir("got-z-volatile");
+  const dataDir = await createTempDataDir("got-z-ephemeral");
   tempDirs.push(dataDir);
 
   const port = await getFreePort();

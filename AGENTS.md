@@ -80,7 +80,7 @@ zig build run
 ```
 
 The runtime listens on `localhost:3001`.
-By default it is volatile and uses `storage.NoopEngine`. Enable disk persistence with `-p` or `--persistent`; this writes `got-z.wal` in the process working directory via an asynchronous batched WAL writer. Override the port with `GOT_Z_PORT=<port>` or `--port <port>`:
+By default it is ephemeral and uses `storage.NoopEngine`. Enable disk persistence with `-p` or `--persistent`; this writes `got-z.wal` in the process working directory via an asynchronous batched WAL writer. Override the port with `GOT_Z_PORT=<port>` or `--port <port>`:
 
 ```sh
 GOT_Z_PORT=3099 zig build run
