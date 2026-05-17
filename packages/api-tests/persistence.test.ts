@@ -36,6 +36,11 @@ test("runtime persists pushed graph data across restart", async () => {
       },
     },
   });
+  await makeRequest(port, "/push", {
+    "node-2": {
+      property3: "value3",
+    },
+  });
 
   await stopRuntime(runtime);
 
@@ -49,6 +54,9 @@ test("runtime persists pushed graph data across restart", async () => {
         label: true,
       },
     },
+    "node-2": {
+      property3: true,
+    },
   });
 
   expect(response).toEqual({
@@ -61,6 +69,9 @@ test("runtime persists pushed graph data across restart", async () => {
           label: "target",
         },
       },
+    },
+    "node-2": {
+      property3: "value3",
     },
   });
 });

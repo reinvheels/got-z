@@ -15,8 +15,8 @@ pub fn main(init: std.process.Init) !void {
     var graph = graph_store.GraphStore.init(allocator, io);
     defer graph.deinit();
 
-    var noop_storage = storage.NoopEngine{};
-    const storage_engine = noop_storage.engine();
+    var wal_storage = storage.JsonWalEngine.init(allocator, io);
+    const storage_engine = wal_storage.engine();
     defer storage_engine.deinit();
 
     try storage_engine.load(&graph);

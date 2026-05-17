@@ -140,11 +140,11 @@ fn handlePush(self: *Server, stream: net.Stream, body: []const u8, alloc: std.me
     std.log.info("PUSH received JSON with {} keys", .{obj.count()});
     util.dumpJsonValue("PUSH entry", std.json.Value{ .object = obj });
 
-    try self.storage_engine.appendPush(obj);
-
     {
         self.graph.lock();
         defer self.graph.unlock();
+
+        try self.storage_engine.appendPush(obj);
         self.graph.applyPush(obj);
     }
 

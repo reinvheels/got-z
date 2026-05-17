@@ -1,4 +1,4 @@
-import { test, expect, describe, beforeEach } from "bun:test";
+import { test, expect, describe, beforeAll, afterAll, beforeEach } from "bun:test";
 import {
   PushRequest,
   PullRequest,
@@ -9,9 +9,29 @@ import {
 } from "@got-z/api-spec";
 import { getPermutations } from "@got-z/util";
 
-// Dummy server setup
-const TEST_PORT = 3001;
-const SERVER_URL = `http://localhost:${TEST_PORT}`;
+type RuntimeProcess = ReturnType<typeof Bun.spawn>;
+
+const runtimeBinary = `${import.meta.dir}/../db-runtime/zig-out/bin/db-runtime`;
+
+let runtime: RuntimeProcess | undefined;
+let dataDir: string | undefined;
+let serverUrl: string;
+
+beforeAll(async () => {
+  expect(await Bun.file(runtimeBinary).exists()).toBe(true);
+
+  dataDir = `${Bun.env.TMPDIR ?? "/tmp"}/got-z-performance-${crypto.randomUUID()}`;
+  await run(["mkdir", "-p", dataDir]);
+
+  const port = await getFreePort();
+  runtime = await startRuntime(dataDir, port);
+  serverUrl = `http://127.0.0.1:${port}`;
+});
+
+afterAll(async () => {
+  if (runtime) await stopRuntime(runtime);
+  if (dataDir) await run(["rm", "-rf", dataDir]);
+});
 
 type Response<T> = {
   status: number;
@@ -20,7 +40,7 @@ type Response<T> = {
 
 // Helper function to make HTTP requests
 async function makeRequest<TRes>(endpoint: string, method: string, body?: any) {
-  const response = await fetch(`${SERVER_URL}${endpoint}`, {
+  const response = await fetch(`${serverUrl}${endpoint}`, {
     method,
     headers: {
       "Content-Type": "application/json",
@@ -32,6 +52,83 @@ async function makeRequest<TRes>(endpoint: string, method: string, body?: any) {
     status: response.status,
     data: await response.json(),
   } as Response<TRes>;
+}
+
+async function startRuntime(cwd: string, port: number): Promise<RuntimeProcess> {
+  const proc = Bun.spawn([runtimeBinary, "--port", String(port)], {
+    cwd,
+    stdout: "ignore",
+    stderr: "ignore",
+    env: {
+      ...process.env,
+      GOT_Z_PORT: String(port),
+    },
+  });
+
+  await waitForHealth(port, proc);
+  return proc;
+}
+
+async function stopRuntime(proc: RuntimeProcess): Promise<void> {
+  proc.kill();
+  const exited = await Promise.race([
+    proc.exited.catch(() => undefined),
+    Bun.sleep(1000).then(() => "timeout" as const),
+  ]);
+  if (exited === "timeout") {
+    proc.kill("SIGKILL");
+    await proc.exited.catch(() => undefined);
+  }
+}
+
+async function waitForHealth(port: number, proc: RuntimeProcess): Promise<void> {
+  const deadline = Date.now() + 5000;
+  let lastError: unknown;
+
+  while (Date.now() < deadline) {
+    if (proc.exitCode !== null) {
+      throw new Error(`db-runtime exited early with code ${proc.exitCode}`);
+    }
+
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/`);
+      if (response.status === 200) return;
+    } catch (err) {
+      lastError = err;
+    }
+
+    await Bun.sleep(25);
+  }
+
+  throw new Error(`db-runtime did not become healthy on port ${port}: ${lastError}`);
+}
+
+async function getFreePort(): Promise<number> {
+  const server = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    fetch() {
+      return new Response("ok");
+    },
+  });
+  const port = server.port;
+  if (port === undefined) {
+    await server.stop(true);
+    throw new Error("Could not allocate TCP port");
+  }
+  await server.stop(true);
+  return port;
+}
+
+async function run(cmd: string[]): Promise<void> {
+  const proc = Bun.spawn(cmd, {
+    stdout: "ignore",
+    stderr: "pipe",
+  });
+  const exitCode = await proc.exited;
+  if (exitCode !== 0) {
+    throw new Error(`${cmd.join(" ")} failed with exit code ${exitCode}`);
+  }
 }
 
 describe("Large-scale node operations", () => {

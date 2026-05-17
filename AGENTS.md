@@ -95,7 +95,7 @@ ZIG_GLOBAL_CACHE_DIR=/private/tmp/zig-cache-0.17 zig build
 
 ## API Tests
 
-The API tests expect a real server on `localhost:3001`; despite the README wording, there is no in-test dummy server setup.
+The legacy API and error tests expect a real server on `localhost:3001`; despite the README wording, there is no in-test dummy server setup for those files.
 
 Start the DB runtime in `ReleaseFast` mode before running API tests:
 
@@ -110,14 +110,15 @@ Then run the API tests from the repo root:
 bun run test:api
 ```
 
-Run only the persistence contract test after building `packages/db-runtime/zig-out/bin/db-runtime`:
+Run the self-contained persistence or performance tests after building `packages/db-runtime/zig-out/bin/db-runtime`:
 
 ```sh
 cd packages/api-tests
 bun test persistence.test.ts
+bun test performance.test.ts
 ```
 
-The persistence test starts the built runtime itself, chooses a free localhost port, runs from a temporary data directory, pushes data, restarts the process, then pulls and verifies the data.
+The persistence and performance tests start the built runtime themselves, choose a free localhost port, run from a temporary data directory, and clean up their runtime process after the test run. The persistence test additionally restarts the process before verifying stored data.
 
 Use `ReleaseFast` for these tests. The Debug build emits large JSON dumps during the performance tests and can block or time out.
 
@@ -130,7 +131,7 @@ Expected current result:
 Ran 31 tests across 3 files
 ```
 
-After the test run, stop the local runtime so port `3001` is not left occupied.
+After running the legacy API/error tests, stop the local runtime so port `3001` is not left occupied.
 
 ## Current Runtime Notes
 
@@ -142,4 +143,4 @@ After the test run, stop the local runtime so port `3001` is not left occupied.
 - `packages/db-runtime/src/util/json.zig` wraps `std.json.ObjectMap`; this code follows the Zig 0.17 API where maps use `.empty` plus allocator-explicit `put`/`deinit`.
 - `httpz` has been removed from the DB runtime; keep new runtime work aligned with stdlib `std.Io`/`Io.net` unless there is a deliberate dependency decision.
 
-The current storage backend is `storage.NoopEngine`. Keep persistence work behind the `storage.Engine` and `snapshot.SnapshotSink` interfaces so the conservative WAL/snapshot path can later swap JSON, binary, or custom-layout implementations without changing HTTP routing or graph mutation logic.
+The default storage backend is `storage.JsonWalEngine`. It writes accepted `/push` bodies as newline-delimited JSON to `got-z.wal` in the process working directory and replays that WAL during startup. Keep persistence work behind the `storage.Engine` and `snapshot.SnapshotSink` interfaces so the conservative WAL/snapshot path can later swap JSON, binary, or custom-layout implementations without changing HTTP routing or graph mutation logic.
