@@ -1,5 +1,6 @@
 import { z } from 'zod';
-export { gotzApiContract } from './contract';
+import { gotzApiContract } from './contract';
+export { gotzApiContract };
 export type {
   ContractStatus,
   ExampleSpec,
@@ -7,6 +8,8 @@ export type {
   KeyGrammarSpec,
   OperationSpec,
   PathItemSpec,
+  TokenMapSpec,
+  TokenSpec,
 } from './define';
 export { defineGotzContract } from './define';
 
@@ -36,23 +39,6 @@ export type PushResponse = z.infer<typeof PushResponseSchema>;
 export type PullRequest = z.infer<typeof PullRequestSchema>;
 export type PullResponse = z.infer<typeof PullResponseSchema>;
 
-// Rights constants
-export const Rights = {
-  READ: 'r',
-  WRITE: 'w',
-  ADMIN: 'a',
-  BE: 'b',
-} as const;
-
-// Edge direction constants
-export const EdgeDirection = {
-  OUT: '>',
-  IN: '<',
-  BI: '<>',
-} as const;
-
-// Special prefixes
-export const Prefixes = {
-  RIGHTS: '@',
-  EDGE_PROPERTY: '-',
-} as const;
+export const Rights = gotzApiContract.xGotzTokens.rights;
+export const EdgeDirection = gotzApiContract.xGotzTokens.edgeDirections;
+export const Prefixes = gotzApiContract.xGotzTokens.prefixes;

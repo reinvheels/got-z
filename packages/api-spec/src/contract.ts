@@ -203,6 +203,24 @@ export const gotzApiContract = defineGotzContract({
     },
   },
 
+  xGotzTokens: {
+    rights: {
+      READ: "r",
+      WRITE: "w",
+      ADMIN: "a",
+      BE: "b",
+    },
+    edgeDirections: {
+      OUT: ">",
+      IN: "<",
+      BI: "<>",
+    },
+    prefixes: {
+      RIGHTS: "@",
+      EDGE_PROPERTY: "-",
+    },
+  },
+
   xGotzKeyGrammar: {
     topLevelNodeId: {
       context: "document.topLevelKey",

@@ -61,6 +61,14 @@ export type KeyGrammarSpec = {
   readonly plannedTokens?: readonly string[];
 };
 
+export type TokenMapSpec = Readonly<Record<string, string>>;
+
+export type TokenSpec = {
+  readonly rights: TokenMapSpec;
+  readonly edgeDirections: TokenMapSpec;
+  readonly prefixes: TokenMapSpec;
+};
+
 export type SemanticRuleSpec = {
   readonly status: ContractStatus;
   readonly when: string;
@@ -100,6 +108,7 @@ export type GotzApiContract = {
     readonly schemas: Readonly<Record<string, SchemaSpec>>;
     readonly examples: Readonly<Record<string, ExampleSpec>>;
   };
+  readonly xGotzTokens: TokenSpec;
   readonly xGotzKeyGrammar: Readonly<Record<string, KeyGrammarSpec>>;
   readonly xGotzSemantics: Readonly<Record<string, SemanticRuleSpec>>;
   readonly xGotzRuntimeModes: Readonly<Record<string, RuntimeModeSpec>>;
