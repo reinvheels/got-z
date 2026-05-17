@@ -23,7 +23,7 @@ test("runtime persists pushed graph data across restart", async () => {
 
   const port = await getFreePort();
 
-  let runtime = await startRuntime(dataDir, port);
+  let runtime = await startRuntime(dataDir, port, { persistent: true });
   await makeRequest(port, "/push", {
     "node-1": {
       property1: "value1",
@@ -44,7 +44,7 @@ test("runtime persists pushed graph data across restart", async () => {
 
   await stopRuntime(runtime);
 
-  runtime = await startRuntime(dataDir, port);
+  runtime = await startRuntime(dataDir, port, { persistent: true });
   const response = await makeRequest(port, "/pull", {
     "node-1": {
       property1: true,
@@ -76,8 +76,43 @@ test("runtime persists pushed graph data across restart", async () => {
   });
 });
 
-async function startRuntime(cwd: string, port: number): Promise<RuntimeProcess> {
-  const runtime = Bun.spawn([runtimeBinary, "--port", String(port)], {
+test("runtime is volatile by default", async () => {
+  expect(await Bun.file(runtimeBinary).exists()).toBe(true);
+
+  const dataDir = `${Bun.env.TMPDIR ?? "/tmp"}/got-z-volatile-${crypto.randomUUID()}`;
+  await run(["mkdir", "-p", dataDir]);
+  tempDirs.push(dataDir);
+
+  const port = await getFreePort();
+
+  let runtime = await startRuntime(dataDir, port);
+  await makeRequest(port, "/push", {
+    "node-1": {
+      property1: "value1",
+    },
+  });
+
+  await stopRuntime(runtime);
+
+  runtime = await startRuntime(dataDir, port);
+  const response = await makeRequest(port, "/pull", {
+    "node-1": {
+      property1: true,
+    },
+  });
+
+  expect(response).toEqual({});
+});
+
+async function startRuntime(
+  cwd: string,
+  port: number,
+  options: { persistent?: boolean } = {},
+): Promise<RuntimeProcess> {
+  const args = [runtimeBinary, "--port", String(port)];
+  if (options.persistent) args.push("-p");
+
+  const runtime = Bun.spawn(args, {
     cwd,
     stdout: "pipe",
     stderr: "pipe",

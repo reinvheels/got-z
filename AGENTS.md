@@ -80,11 +80,12 @@ zig build run
 ```
 
 The runtime listens on `localhost:3001`.
-Override the port with `GOT_Z_PORT=<port>` or `--port <port>`:
+By default it is volatile and uses `storage.NoopEngine`. Enable disk persistence with `-p` or `--persistent`; this writes `got-z.wal` in the process working directory. Override the port with `GOT_Z_PORT=<port>` or `--port <port>`:
 
 ```sh
 GOT_Z_PORT=3099 zig build run
 zig-out/bin/db-runtime --port 3099
+zig-out/bin/db-runtime --persistent --port 3099
 ```
 
 If Zig fails because it cannot write to the global cache in a sandboxed environment, set the cache to a writable path:
@@ -143,4 +144,4 @@ After running the legacy API/error tests, stop the local runtime so port `3001` 
 - `packages/db-runtime/src/util/json.zig` wraps `std.json.ObjectMap`; this code follows the Zig 0.17 API where maps use `.empty` plus allocator-explicit `put`/`deinit`.
 - `httpz` has been removed from the DB runtime; keep new runtime work aligned with stdlib `std.Io`/`Io.net` unless there is a deliberate dependency decision.
 
-The default storage backend is `storage.JsonWalEngine`. It writes accepted `/push` bodies as newline-delimited JSON to `got-z.wal` in the process working directory and replays that WAL during startup. Keep persistence work behind the `storage.Engine` and `snapshot.SnapshotSink` interfaces so the conservative WAL/snapshot path can later swap JSON, binary, or custom-layout implementations without changing HTTP routing or graph mutation logic.
+The default storage backend is `storage.NoopEngine`; pass `-p` or `--persistent` to use `storage.JsonWalEngine`. The WAL engine writes accepted `/push` bodies as newline-delimited JSON to `got-z.wal` in the process working directory and replays that WAL during startup. Keep persistence work behind the `storage.Engine` and `snapshot.SnapshotSink` interfaces so the conservative WAL/snapshot path can later swap JSON, binary, or custom-layout implementations without changing HTTP routing or graph mutation logic.

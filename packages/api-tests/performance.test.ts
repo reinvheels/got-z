@@ -12,6 +12,7 @@ import { getPermutations } from "@got-z/util";
 type RuntimeProcess = ReturnType<typeof Bun.spawn>;
 
 const runtimeBinary = `${import.meta.dir}/../db-runtime/zig-out/bin/db-runtime`;
+const persistent = Bun.env.GOT_Z_PERSISTENT === "1";
 
 let runtime: RuntimeProcess | undefined;
 let dataDir: string | undefined;
@@ -55,7 +56,10 @@ async function makeRequest<TRes>(endpoint: string, method: string, body?: any) {
 }
 
 async function startRuntime(cwd: string, port: number): Promise<RuntimeProcess> {
-  const proc = Bun.spawn([runtimeBinary, "--port", String(port)], {
+  const args = [runtimeBinary, "--port", String(port)];
+  if (persistent) args.push("-p");
+
+  const proc = Bun.spawn(args, {
     cwd,
     stdout: "ignore",
     stderr: "ignore",
