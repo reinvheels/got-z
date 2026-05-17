@@ -1,13 +1,20 @@
 const std = @import("std");
+const builtin = @import("builtin");
+
+const min_zig_version = "0.17.0-dev.251+0db721ec2";
 
 pub fn build(b: *std.Build) void {
+    const required = std.SemanticVersion.parse(min_zig_version) catch unreachable;
+    if (builtin.zig_version.order(required) == .lt) {
+        std.debug.print(
+            "db-runtime requires Zig >= {s}; current Zig is {s}\n",
+            .{ min_zig_version, builtin.zig_version_string },
+        );
+        std.process.exit(1);
+    }
+
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
-
-    const httpz_dep = b.dependency("httpz", .{
-        .target = target,
-        .optimize = optimize,
-    });
 
     const exe = b.addExecutable(.{
         .name = "db-runtime",
@@ -17,8 +24,6 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
         }),
     });
-
-    exe.root_module.addImport("httpz", httpz_dep.module("httpz"));
 
     b.installArtifact(exe);
 

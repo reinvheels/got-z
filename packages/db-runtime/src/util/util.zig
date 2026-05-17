@@ -12,10 +12,10 @@ pub const StringContext = struct {
     }
 };
 
-pub fn mergeJsonMap(left: *std.json.ObjectMap, right: *const std.json.ObjectMap) !void {
+pub fn mergeJsonMap(allocator: std.mem.Allocator, left: *std.json.ObjectMap, right: *const std.json.ObjectMap) !void {
     var right_iter = right.*.iterator();
     while (right_iter.next()) |entry| {
-        try left.*.put(entry.key_ptr.*, entry.value_ptr.*);
+        try left.*.put(allocator, entry.key_ptr.*, entry.value_ptr.*);
     }
 }
 

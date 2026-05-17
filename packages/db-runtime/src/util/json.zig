@@ -1,5 +1,8 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const util = @import("util.zig");
+
+const debug_log = builtin.mode == .Debug;
 
 /// Deep clone a JSON value, duplicating all strings
 fn cloneValue(allocator: std.mem.Allocator, value: std.json.Value) !std.json.Value {
@@ -19,12 +22,12 @@ fn cloneValue(allocator: std.mem.Allocator, value: std.json.Value) !std.json.Val
             break :blk .{ .array = new_arr };
         },
         .object => |obj| blk: {
-            var new_obj = std.json.ObjectMap.init(allocator);
+            var new_obj: std.json.ObjectMap = .empty;
             var it = obj.iterator();
             while (it.next()) |entry| {
                 const duped_key = try allocator.dupe(u8, entry.key_ptr.*);
                 const cloned_val = try cloneValue(allocator, entry.value_ptr.*);
-                try new_obj.put(duped_key, cloned_val);
+                try new_obj.put(allocator, duped_key, cloned_val);
             }
             break :blk .{ .object = new_obj };
         },
@@ -41,13 +44,13 @@ pub fn Json(comptime depth: u32) type {
 
         pub fn init(allocator: std.mem.Allocator) Self {
             return Self{
-                .map = std.json.ObjectMap.init(allocator),
+                .map = .empty,
                 .allocator = allocator,
             };
         }
 
         pub fn deinit(self: *Self) void {
-            self.map.deinit();
+            self.map.deinit(self.allocator);
         }
 
         pub fn get(self: *Self, key: []const u8) ?ValueType() {
@@ -61,7 +64,7 @@ pub fn Json(comptime depth: u32) type {
 
         pub fn put(self: *Self, key: []const u8, value: ValueType()) !void {
             const duped_key = try self.allocator.dupe(u8, key);
-            try self.map.put(duped_key, value);
+            try self.map.put(self.allocator, duped_key, value);
         }
 
         pub fn iterator(self: *Self) std.json.ObjectMap.Iterator {
@@ -69,12 +72,14 @@ pub fn Json(comptime depth: u32) type {
         }
 
         pub fn write(self: *Self, path: anytype, value: LeafType(@TypeOf(path))) !void {
-            std.debug.print("WRITING PATH: ", .{});
-            inline for (path, 0..) |segment, i| {
-                if (i > 0) std.debug.print(" -> ", .{});
-                std.debug.print("{s}", .{segment});
+            if (debug_log) {
+                std.debug.print("WRITING PATH: ", .{});
+                inline for (path, 0..) |segment, i| {
+                    if (i > 0) std.debug.print(" -> ", .{});
+                    std.debug.print("{s}", .{segment});
+                }
+                std.debug.print("\n", .{});
             }
-            std.debug.print("\n", .{});
 
             defer util.dumpJsonValue("WRITING JSON", std.json.Value{ .object = self.map });
 
@@ -102,18 +107,18 @@ pub fn Json(comptime depth: u32) type {
                     if (@TypeOf(value) == std.json.ObjectMap) {
                         // Clone the object map
                         const cloned = try cloneValue(self.allocator, std.json.Value{ .object = value });
-                        try current_map.*.put(duped_key, cloned);
+                        try current_map.*.put(self.allocator, duped_key, cloned);
                     } else {
                         // Clone the value (handles strings, nested objects, etc.)
                         const cloned = try cloneValue(self.allocator, value);
-                        try current_map.*.put(duped_key, cloned);
+                        try current_map.*.put(self.allocator, duped_key, cloned);
                     }
                 } else {
                     var entry = current_map.*.getPtr(key);
                     if (entry == null) {
-                        const new_map = std.json.ObjectMap.init(self.allocator);
+                        const new_map: std.json.ObjectMap = .empty;
                         const duped_key = try self.allocator.dupe(u8, key);
-                        try current_map.*.put(duped_key, std.json.Value{ .object = new_map });
+                        try current_map.*.put(self.allocator, duped_key, std.json.Value{ .object = new_map });
                         entry = current_map.*.getPtr(key);
                     }
                     if (entry) |e| {
@@ -145,7 +150,7 @@ pub fn Json(comptime depth: u32) type {
             // }
 
             inline for (path, 0..) |key, i| {
-                std.debug.print("Reading path: {s}\n", .{key});
+                if (debug_log) std.debug.print("Reading path: {s}\n", .{key});
                 var entry = current_map.getPtr(key) orelse {
                     return null;
                 };

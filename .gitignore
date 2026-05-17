@@ -12,6 +12,7 @@ build/
 zig-out/
 zig-cache/
 .zig-cache/
+zig-pkg/
 
 # Runtime files
 *.log

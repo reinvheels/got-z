@@ -1,128 +1,35 @@
 const std = @import("std");
-const httpz = @import("httpz");
+const Io = std.Io;
+const net = Io.net;
 const graph_store = @import("graph_store.zig");
-const httpz_util = @import("util/httpz_util.zig");
-const util = @import("util/util.zig");
+const Server = @import("server.zig");
 
-var graph: graph_store.GraphStore = undefined;
+const port: u16 = 3001;
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.gpa;
+    const io = init.io;
 
-    graph = graph_store.GraphStore.init(allocator);
+    var graph = graph_store.GraphStore.init(allocator, io);
+    defer graph.deinit();
 
-    // More advance cases will use a custom "Handler" instead of "void".
-    // The last parameter is our handler instance, since we have a "void"
-    // handler, we passed a void ({}) value.
-    var server = try httpz.Server(void).init(allocator, .{
-        .port = 3001,
-        .request = .{
-            .max_body_size = 10 * 1024 * 1024, // 10MB
-        },
-    }, {});
-    defer {
-        // clean shutdown, finishes serving any live request
-        server.stop();
-        server.deinit();
-        graph.deinit();
+    var server = Server.init(allocator, io, &graph);
+
+    const address = net.IpAddress.parseIp4("0.0.0.0", port) catch unreachable;
+    var tcp = try address.listen(io, .{ .reuse_address = true });
+    defer tcp.deinit(io);
+
+    std.log.info("db-runtime listening on :{d}", .{port});
+
+    while (true) {
+        const stream = tcp.accept(io) catch |err| {
+            std.log.err("accept failed: {s}", .{@errorName(err)});
+            continue;
+        };
+        _ = std.Thread.spawn(.{ .allocator = allocator }, Server.handleConnection, .{ &server, stream }) catch |err| {
+            std.log.err("failed to spawn thread: {s}", .{@errorName(err)});
+            stream.close(io);
+            continue;
+        };
     }
-
-    var router = try server.router(.{});
-    router.post("/push", push, .{});
-    router.post("/pull", pull, .{});
-
-    // blocks
-    try server.listen();
-}
-
-fn push(req: *httpz.Request, res: *httpz.Response) !void {
-    const body = try httpz_util.parseJsonRequest(req, res) orelse return;
-    const obj = switch (body) {
-        .object => |obj| obj,
-        else => {
-            std.debug.print("PUSH request body is not an object\n", .{});
-            res.status = 400;
-            try res.json(.{ .message = "Request body must be a JSON object" }, .{});
-            return;
-        },
-    };
-    std.log.info("PUSH received JSON with {} keys", .{obj.count()});
-    util.dumpJsonValue("PUSH entry", std.json.Value{ .object = obj });
-
-    {
-        graph.mutex.lock();
-        defer graph.mutex.unlock();
-
-        var iterator = obj.iterator();
-        while (iterator.next()) |entry| {
-            switch (entry.value_ptr.*) {
-                .object => |node_body| {
-                    graph.upsertNode(entry.key_ptr.*, node_body) catch |err| {
-                        std.debug.print("Error adding node {s}: {any}\n", .{ entry.key_ptr.*, err });
-                        continue;
-                    };
-                },
-                else => {
-                    std.debug.print("Value for key {s} is not an object, skipping\n", .{entry.key_ptr.*});
-                },
-            }
-        }
-    }
-
-    util.dumpJsonValue("PUSH nodes", std.json.Value{ .object = graph.nodes.map });
-    util.dumpJsonValue("PUSH edges", std.json.Value{ .object = graph.edges.map });
-    std.debug.print("\n", .{});
-
-    res.status = 200;
-    try res.json(.{ .message = "Data received successfully" }, .{});
-}
-
-fn pull(req: *httpz.Request, res: *httpz.Response) !void {
-    const body = try httpz_util.parseJsonRequest(req, res) orelse return;
-
-    util.dumpJsonValue("PULL nodes", std.json.Value{ .object = graph.nodes.map });
-    util.dumpJsonValue("PULL edges", std.json.Value{ .object = graph.edges.map });
-
-    const obj = switch (body) {
-        .object => |obj| obj,
-        else => {
-            std.debug.print("PULL request body is not an object\n", .{});
-            res.status = 400;
-            try res.json(.{ .message = "Request body must be a JSON object" }, .{});
-            return;
-        },
-    };
-    std.log.info("PULL received JSON with {} keys", .{obj.count()});
-
-    var result = std.json.ObjectMap.init(req.arena);
-    {
-        graph.mutex.lock();
-        defer graph.mutex.unlock();
-
-        var query_iterator = obj.iterator();
-        while (query_iterator.next()) |query_entry| {
-            const node_id = query_entry.key_ptr.*;
-
-            switch (query_entry.value_ptr.*) {
-                .object => |query_props| {
-                    const node_result = graph.query(node_id, query_props, req.arena) catch |err| {
-                        std.debug.print("Query error for node {s}: {any}\n", .{ node_id, err });
-                        continue;
-                    };
-                    result.put(node_id, std.json.Value{ .object = node_result }) catch |err| {
-                        std.debug.print("Error adding result for node {s}: {any}\n", .{ node_id, err });
-                    };
-                },
-                else => {
-                    std.debug.print("Query for node {s} is not an object, skipping\n", .{node_id});
-                },
-            }
-        }
-    }
-
-    std.debug.print("\n", .{});
-
-    res.status = 200;
-    try res.json(std.json.Value{ .object = result }, .{});
 }
