@@ -137,5 +137,9 @@ After the test run, stop the local runtime so port `3001` is not left occupied.
 - `packages/db-runtime/src/main.zig` owns process startup and the accept loop.
 - `packages/db-runtime/src/server.zig` owns the HTTP parser/router and response shaping.
 - `packages/db-runtime/src/graph_store.zig` owns graph mutation/query behavior.
+- `packages/db-runtime/src/storage.zig` defines the storage-engine interface: load existing state, append accepted `/push` mutations, checkpoint the current graph, and deinit.
+- `packages/db-runtime/src/snapshot.zig` defines the snapshot serialization sink. Snapshot writers receive logical node and edge records instead of raw memory, so JSON, binary, and future offset-based engines can share the same graph traversal.
 - `packages/db-runtime/src/util/json.zig` wraps `std.json.ObjectMap`; this code follows the Zig 0.17 API where maps use `.empty` plus allocator-explicit `put`/`deinit`.
 - `httpz` has been removed from the DB runtime; keep new runtime work aligned with stdlib `std.Io`/`Io.net` unless there is a deliberate dependency decision.
+
+The current storage backend is `storage.NoopEngine`. Keep persistence work behind the `storage.Engine` and `snapshot.SnapshotSink` interfaces so the conservative WAL/snapshot path can later swap JSON, binary, or custom-layout implementations without changing HTTP routing or graph mutation logic.

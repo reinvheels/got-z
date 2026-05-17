@@ -2,6 +2,7 @@ const std = @import("std");
 const Io = std.Io;
 const net = Io.net;
 const graph_store = @import("graph_store.zig");
+const storage = @import("storage.zig");
 const Server = @import("server.zig");
 
 const default_port: u16 = 3001;
@@ -14,7 +15,13 @@ pub fn main(init: std.process.Init) !void {
     var graph = graph_store.GraphStore.init(allocator, io);
     defer graph.deinit();
 
-    var server = Server.init(allocator, io, &graph);
+    var noop_storage = storage.NoopEngine{};
+    const storage_engine = noop_storage.engine();
+    defer storage_engine.deinit();
+
+    try storage_engine.load(&graph);
+
+    var server = Server.init(allocator, io, &graph, storage_engine);
 
     const address = net.IpAddress.parseIp4("0.0.0.0", port) catch unreachable;
     var tcp = try address.listen(io, .{ .reuse_address = true });

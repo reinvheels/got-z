@@ -2,6 +2,7 @@ const std = @import("std");
 const Io = std.Io;
 const net = Io.net;
 const graph_store = @import("graph_store.zig");
+const storage_mod = @import("storage.zig");
 const util = @import("util/util.zig");
 
 const Server = @This();
@@ -12,9 +13,10 @@ const header_scratch_size: usize = 16 * 1024;
 allocator: std.mem.Allocator,
 io: Io,
 graph: *graph_store.GraphStore,
+storage_engine: storage_mod.Engine,
 
-pub fn init(allocator: std.mem.Allocator, io: Io, graph: *graph_store.GraphStore) Server {
-    return .{ .allocator = allocator, .io = io, .graph = graph };
+pub fn init(allocator: std.mem.Allocator, io: Io, graph: *graph_store.GraphStore, storage_engine: storage_mod.Engine) Server {
+    return .{ .allocator = allocator, .io = io, .graph = graph, .storage_engine = storage_engine };
 }
 
 pub fn handleConnection(self: *Server, stream: net.Stream) void {
@@ -138,24 +140,12 @@ fn handlePush(self: *Server, stream: net.Stream, body: []const u8, alloc: std.me
     std.log.info("PUSH received JSON with {} keys", .{obj.count()});
     util.dumpJsonValue("PUSH entry", std.json.Value{ .object = obj });
 
+    try self.storage_engine.appendPush(obj);
+
     {
         self.graph.lock();
         defer self.graph.unlock();
-
-        var it = obj.iterator();
-        while (it.next()) |entry| {
-            switch (entry.value_ptr.*) {
-                .object => |node_body| {
-                    self.graph.upsertNode(entry.key_ptr.*, node_body) catch |err| {
-                        std.debug.print("Error adding node {s}: {any}\n", .{ entry.key_ptr.*, err });
-                        continue;
-                    };
-                },
-                else => {
-                    std.debug.print("Value for key {s} is not an object, skipping\n", .{entry.key_ptr.*});
-                },
-            }
-        }
+        self.graph.applyPush(obj);
     }
 
     util.dumpJsonValue("PUSH nodes", std.json.Value{ .object = self.graph.nodes.map });

@@ -1,4 +1,5 @@
 const std = @import("std");
+const snapshot = @import("snapshot.zig");
 const util = @import("util/util.zig");
 const json = @import("util/json.zig");
 
@@ -43,6 +44,64 @@ pub const GraphStore = struct {
         }
         self.edges.deinit();
         self.nodes.deinit();
+    }
+
+    pub fn applyPush(self: *Self, body: std.json.ObjectMap) void {
+        var it = body.iterator();
+        while (it.next()) |entry| {
+            switch (entry.value_ptr.*) {
+                .object => |node_body| {
+                    self.upsertNode(entry.key_ptr.*, node_body) catch |err| {
+                        std.debug.print("Error adding node {s}: {any}\n", .{ entry.key_ptr.*, err });
+                        continue;
+                    };
+                },
+                else => std.debug.print("Value for key {s} is not an object, skipping\n", .{entry.key_ptr.*}),
+            }
+        }
+    }
+
+    pub fn writeSnapshot(self: *Self, sink: snapshot.SnapshotSink) !void {
+        self.lock();
+        defer self.unlock();
+
+        try sink.begin();
+
+        var node_iterator = self.nodes.map.iterator();
+        while (node_iterator.next()) |entry| {
+            switch (entry.value_ptr.*) {
+                .object => |properties| try sink.writeNode(entry.key_ptr.*, properties),
+                else => {},
+            }
+        }
+
+        var from_iterator = self.edges.map.iterator();
+        while (from_iterator.next()) |from_entry| {
+            const edge_types = switch (from_entry.value_ptr.*) {
+                .object => |obj| obj,
+                else => continue,
+            };
+
+            var edge_type_iterator = edge_types.iterator();
+            while (edge_type_iterator.next()) |edge_type_entry| {
+                const target_edges = switch (edge_type_entry.value_ptr.*) {
+                    .object => |obj| obj,
+                    else => continue,
+                };
+
+                var target_iterator = target_edges.iterator();
+                while (target_iterator.next()) |target_entry| {
+                    const edge_properties = switch (target_entry.value_ptr.*) {
+                        .object => |obj| obj,
+                        else => continue,
+                    };
+
+                    try sink.writeEdge(from_entry.key_ptr.*, edge_type_entry.key_ptr.*, target_entry.key_ptr.*, edge_properties);
+                }
+            }
+        }
+
+        try sink.finish();
     }
 
     pub fn upsertNode(self: *Self, id: []const u8, body: std.json.ObjectMap) !void {
