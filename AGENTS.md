@@ -146,7 +146,7 @@ Prefer small, focused changesets with clear commit messages. After a small coher
 
 Keep hand-written Markdown high-level: vision, architecture, roadmap, and design decisions. Do not manually maintain concrete API examples in Markdown. The API contract in `packages/api-spec` should become the source of truth for generated API docs, machine-readable contract output, and conformance examples.
 
-Use `docs/decisions/` by default for durable design decisions. Add or update a decision whenever work establishes an architectural direction, source-of-truth rule, storage semantic, API grammar rule, or workflow convention that future agents should not have to rediscover from chat history. Keep each decision small, numbered, and structured with Status, Decision, Context, and Consequences.
+Use `docs/decisions/` by default for durable design decisions. Add or update a decision whenever work establishes an architectural direction, source-of-truth rule, storage semantic, API grammar rule, or workflow convention that future agents should not have to rediscover from chat history. Keep each decision small, numbered, and structured with Status, Decision, Context, and Consequences. Follow the decision status schema in `docs/decisions/README.md`; use `Accepted / Deferred` for decisions whose direction is settled but whose implementation is intentionally on hold.
 
 ## Current Runtime Notes
 
