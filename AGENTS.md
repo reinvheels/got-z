@@ -134,6 +134,10 @@ Ran 33 tests across 4 files
 
 The harness should leave no runtime listening after tests finish.
 
+## Commit Flow
+
+Prefer small, focused changesets with clear commit messages. After a small coherent step is implemented, tested, and the user is satisfied with the direction, proactively suggest committing before moving on to the next step. Keep unrelated edits out of the same commit unless they are necessary for the change to work.
+
 ## Current Runtime Notes
 
 - `packages/db-runtime/src/main.zig` owns process startup and the accept loop.
