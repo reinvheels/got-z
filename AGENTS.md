@@ -1,8 +1,8 @@
-# Got-Z Agent Notes
+# Got Agent Notes
 
 ## Project Overview
 
-Got-Z is a Bun workspace for a graph data API backed by a Zig database runtime.
+Got is a Bun workspace for a graph data API backed by a Zig database runtime.
 
 The repo is split into four workspace packages:
 
@@ -15,7 +15,7 @@ High-level documentation lives under `docs/`. Sample request/response fixtures l
 
 ## Vision
 
-Got-Z should become a graph database that can act as a second brain for an AI agent harness. The long-term goal is to provide durable, queryable memory for agents: a structured replacement for Obsidian-style note graphs, optimized for relationships, retrieval, and long-running context rather than human-facing markdown documents.
+Got should become a graph database that can act as a second brain for an AI agent harness. The long-term goal is to provide durable, queryable memory for agents: a structured replacement for Obsidian-style note graphs, optimized for relationships, retrieval, and long-running context rather than human-facing markdown documents.
 
 ## Setup
 
@@ -37,9 +37,9 @@ bun run clean
 For narrower work, prefer package filters:
 
 ```sh
-bun run --filter='@got-z/db-runtime' build
-bun run --filter='@got-z/api-spec' test
-bun run --filter='@got-z/api-tests' test
+bun run --filter='@got/db-runtime' build
+bun run --filter='@got/api-spec' test
+bun run --filter='@got/api-tests' test
 ```
 
 ## Zig Toolchain
@@ -73,7 +73,7 @@ zig build
 Build from the repo root:
 
 ```sh
-bun run --filter='@got-z/db-runtime' build
+bun run --filter='@got/db-runtime' build
 ```
 
 Run the server for manual testing:
@@ -84,10 +84,10 @@ zig build run
 ```
 
 The runtime listens on `localhost:3001`.
-By default it is ephemeral and uses `storage.NoopEngine`. Enable disk persistence with `-p` or `--persistent`; this writes `got-z.wal` in the process working directory via an asynchronous batched WAL writer. Override the port with `GOT_Z_PORT=<port>` or `--port <port>`:
+By default it is ephemeral and uses `storage.NoopEngine`. Enable disk persistence with `-p` or `--persistent`; this writes `got.wal` in the process working directory via an asynchronous batched WAL writer. Override the port with `GOT_PORT=<port>` or `--port <port>`:
 
 ```sh
-GOT_Z_PORT=3099 zig build run
+GOT_PORT=3099 zig build run
 zig-out/bin/db-runtime --port 3099
 zig-out/bin/db-runtime --persistent --port 3099
 ```
@@ -158,4 +158,4 @@ Use `docs/decisions/` by default for durable design decisions. Add or update a d
 - `packages/db-runtime/src/util/json.zig` wraps `std.json.ObjectMap`; this code follows the Zig 0.17 API where maps use `.empty` plus allocator-explicit `put`/`deinit`.
 - `httpz` has been removed from the DB runtime; keep new runtime work aligned with stdlib `std.Io`/`Io.net` unless there is a deliberate dependency decision.
 
-The default storage backend is `storage.NoopEngine`; pass `-p` or `--persistent` to use `storage.JsonWalEngine`. The WAL engine queues accepted `/push` bodies, writes length-framed raw JSON records to `got-z.wal` from a background thread, syncs once per drained batch, and replays that WAL during startup. Keep persistence work behind the `storage.Engine` and `snapshot.SnapshotSink` interfaces so the conservative WAL/snapshot path can later swap JSON, binary, or custom-layout implementations without changing HTTP routing or graph mutation logic.
+The default storage backend is `storage.NoopEngine`; pass `-p` or `--persistent` to use `storage.JsonWalEngine`. The WAL engine queues accepted `/push` bodies, writes length-framed raw JSON records to `got.wal` from a background thread, syncs once per drained batch, and replays that WAL during startup. Keep persistence work behind the `storage.Engine` and `snapshot.SnapshotSink` interfaces so the conservative WAL/snapshot path can later swap JSON, binary, or custom-layout implementations without changing HTTP routing or graph mutation logic.

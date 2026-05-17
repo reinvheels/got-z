@@ -6,21 +6,21 @@ import {
   EdgeDirection,
   Prefixes,
   PullResponse,
-} from "@got-z/api-spec";
-import { getPermutations } from "@got-z/util";
+} from "@got/api-spec";
+import { getPermutations } from "@got/util";
 import {
   cleanupRuntimeHarness,
   createRuntimeHarness,
   type RuntimeHarness,
 } from "./runtime-harness";
 
-const persistent = Bun.env.GOT_Z_PERSISTENT === "1";
+const persistent = Bun.env.GOT_PERSISTENT === "1";
 
 let harness: RuntimeHarness | undefined;
 let serverUrl: string;
 
 beforeAll(async () => {
-  harness = await createRuntimeHarness("got-z-performance", { persistent });
+  harness = await createRuntimeHarness("got-performance", { persistent });
   serverUrl = harness.url;
 });
 

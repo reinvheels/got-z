@@ -9,7 +9,7 @@ let harness: RuntimeHarness | undefined;
 let serverUrl: string;
 
 beforeAll(async () => {
-  harness = await createRuntimeHarness("got-z-error");
+  harness = await createRuntimeHarness("got-error");
   serverUrl = harness.url;
 });
 

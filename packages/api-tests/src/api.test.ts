@@ -6,8 +6,8 @@ import {
   PushRequest,
   PullRequest,
   PushResponse,
-} from "@got-z/api-spec";
-import { delay, getPermutations } from "@got-z/util";
+} from "@got/api-spec";
+import { delay, getPermutations } from "@got/util";
 import {
   cleanupRuntimeHarness,
   createRuntimeHarness,
@@ -18,7 +18,7 @@ let harness: RuntimeHarness | undefined;
 let serverUrl: string;
 
 beforeAll(async () => {
-  harness = await createRuntimeHarness("got-z-api");
+  harness = await createRuntimeHarness("got-api");
   serverUrl = harness.url;
 });
 

@@ -2,7 +2,7 @@ const std = @import("std");
 const Io = std.Io;
 const graph_store = @import("graph_store.zig");
 
-const wal_file_name = "got-z.wal";
+const wal_file_name = "got.wal";
 const max_wal_bytes = 1024 * 1024 * 1024;
 
 pub const Engine = struct {

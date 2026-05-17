@@ -1,7 +1,7 @@
 {
-  "name": "@got-z/api-tests",
+  "name": "@got/api-tests",
   "version": "0.1.0",
-  "description": "API tests for Got-Z graph database",
+  "description": "API tests for Got graph database",
   "main": "index.ts",
   "type": "module",
   "scripts": {
@@ -15,6 +15,7 @@
     "@types/node": "latest"
   },
   "dependencies": {
-    "@got-z/api-spec": "workspace:*"
+    "@got/api-spec": "workspace:*",
+    "@got/util": "workspace:*"
   }
 }

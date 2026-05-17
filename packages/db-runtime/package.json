@@ -1,7 +1,7 @@
 {
-  "name": "@got-z/db-runtime",
+  "name": "@got/db-runtime",
   "version": "0.1.0",
-  "description": "Zig-based database runtime for Got-Z graph database",
+  "description": "Zig-based database runtime for Got graph database",
   "main": "build/lib.js",
   "type": "module",
   "scripts": {
@@ -15,6 +15,6 @@
     "@types/node": "latest"
   },
   "dependencies": {
-    "@got-z/api-spec": "workspace:*"
+    "@got/api-spec": "workspace:*"
   }
 }

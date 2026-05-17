@@ -39,7 +39,7 @@ export type SchemaSpec = {
   readonly status: ContractStatus;
   readonly description: string;
   readonly type: "object" | "string" | "number" | "boolean" | "array";
-  readonly xGotzShape?: string;
+  readonly xGotShape?: string;
 };
 
 export type ExampleSpec = {
@@ -95,7 +95,7 @@ export type LimitationSpec = {
   readonly description: string;
 };
 
-export type GotzApiContract = {
+export type GotApiContract = {
   readonly openapi: "3.1.0";
   readonly info: {
     readonly title: string;
@@ -108,14 +108,14 @@ export type GotzApiContract = {
     readonly schemas: Readonly<Record<string, SchemaSpec>>;
     readonly examples: Readonly<Record<string, ExampleSpec>>;
   };
-  readonly xGotzTokens: TokenSpec;
-  readonly xGotzKeyGrammar: Readonly<Record<string, KeyGrammarSpec>>;
-  readonly xGotzSemantics: Readonly<Record<string, SemanticRuleSpec>>;
-  readonly xGotzRuntimeModes: Readonly<Record<string, RuntimeModeSpec>>;
-  readonly xGotzConformance: Readonly<Record<string, ConformanceSpec>>;
-  readonly xGotzLimitations: Readonly<Record<string, LimitationSpec>>;
+  readonly xGotTokens: TokenSpec;
+  readonly xGotKeyGrammar: Readonly<Record<string, KeyGrammarSpec>>;
+  readonly xGotSemantics: Readonly<Record<string, SemanticRuleSpec>>;
+  readonly xGotRuntimeModes: Readonly<Record<string, RuntimeModeSpec>>;
+  readonly xGotConformance: Readonly<Record<string, ConformanceSpec>>;
+  readonly xGotLimitations: Readonly<Record<string, LimitationSpec>>;
 };
 
-export function defineGotzContract<const T extends GotzApiContract>(contract: T): T {
+export function defineGotContract<const T extends GotApiContract>(contract: T): T {
   return contract;
 }

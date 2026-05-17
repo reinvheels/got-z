@@ -1,7 +1,7 @@
 {
-  "name": "@got-z/util",
+  "name": "@got/util",
   "version": "0.1.0",
-  "description": "Utility functions for Got-Z graph database",
+  "description": "Utility functions for Got graph database",
   "main": "index.ts",
   "type": "module",
   "scripts": {

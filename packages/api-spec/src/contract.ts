@@ -1,13 +1,13 @@
-import { defineGotzContract } from "./define";
+import { defineGotContract } from "./define";
 
-export const gotzApiContract = defineGotzContract({
+export const gotApiContract = defineGotContract({
   openapi: "3.1.0",
   info: {
-    title: "Got-Z Graph API",
+    title: "Got Graph API",
     version: "0.1.0",
     status: "partial",
     description:
-      "OpenAPI-inspired contract for the Got-Z graph API, extended with graph-specific key grammar and semantic rules.",
+      "OpenAPI-inspired contract for the Got graph API, extended with graph-specific key grammar and semantic rules.",
   },
 
   paths: {
@@ -102,31 +102,31 @@ export const gotzApiContract = defineGotzContract({
       PushDocument: {
         status: "implemented",
         type: "object",
-        xGotzShape: "Record<NodeId, PushNodeBody>",
+        xGotShape: "Record<NodeId, PushNodeBody>",
         description: "A JSON object whose top-level keys are node IDs and whose values are node mutation bodies.",
       },
       PullDocument: {
         status: "implemented",
         type: "object",
-        xGotzShape: "Record<NodeId, PullNodeBody>",
+        xGotShape: "Record<NodeId, PullNodeBody>",
         description: "A JSON object whose top-level keys are node IDs and whose values describe requested projections.",
       },
       PushAck: {
         status: "implemented",
         type: "object",
-        xGotzShape: "{ message: string }",
+        xGotShape: "{ message: string }",
         description: "A JSON acknowledgement returned after a mutation is accepted by the runtime.",
       },
       PullResultDocument: {
         status: "implemented",
         type: "object",
-        xGotzShape: "Record<NodeId, PullResultNodeBody>",
+        xGotShape: "Record<NodeId, PullResultNodeBody>",
         description: "A JSON object containing the projected graph data requested by a PullDocument.",
       },
       ErrorResponse: {
         status: "implemented",
         type: "object",
-        xGotzShape: "{ error?: string, message?: string }",
+        xGotShape: "{ error?: string, message?: string }",
         description: "Error body returned for invalid requests or unsupported methods.",
       },
     },
@@ -203,7 +203,7 @@ export const gotzApiContract = defineGotzContract({
     },
   },
 
-  xGotzTokens: {
+  xGotTokens: {
     rights: {
       READ: "r",
       WRITE: "w",
@@ -221,7 +221,7 @@ export const gotzApiContract = defineGotzContract({
     },
   },
 
-  xGotzKeyGrammar: {
+  xGotKeyGrammar: {
     topLevelNodeId: {
       context: "document.topLevelKey",
       status: "implemented",
@@ -269,7 +269,7 @@ export const gotzApiContract = defineGotzContract({
     },
   },
 
-  xGotzSemantics: {
+  xGotSemantics: {
     pushNodeProperty: {
       status: "implemented",
       when: "POST /push nodeBody contains a regular key",
@@ -297,7 +297,7 @@ export const gotzApiContract = defineGotzContract({
     },
   },
 
-  xGotzRuntimeModes: {
+  xGotRuntimeModes: {
     ephemeral: {
       status: "implemented",
       default: true,
@@ -312,7 +312,7 @@ export const gotzApiContract = defineGotzContract({
     },
   },
 
-  xGotzConformance: {
+  xGotConformance: {
     basicNodeProperties: {
       status: "implemented",
       exampleRef: "components.examples.basicNodeProperties",
@@ -325,7 +325,7 @@ export const gotzApiContract = defineGotzContract({
     },
   },
 
-  xGotzLimitations: {
+  xGotLimitations: {
     rightsAndActorsPlanned: {
       status: "planned",
       description: "Actor nodes and rights prefixes exist in early tests and constants but are not implemented by the runtime yet.",
@@ -341,4 +341,4 @@ export const gotzApiContract = defineGotzContract({
   },
 } as const);
 
-export type GotzApiContractSource = typeof gotzApiContract;
+export type GotApiContractSource = typeof gotApiContract;

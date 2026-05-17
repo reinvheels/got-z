@@ -1,5 +1,5 @@
 {
-  "name": "got-z",
+  "name": "got",
   "version": "0.1.0",
   "description": "Graph Data API with Zig database runtime",
   "private": true,
@@ -9,7 +9,7 @@
   "scripts": {
     "build": "bun run --filter='*' build",
     "test": "bun run --filter='*' test",
-    "test:api": "bun run --filter='@got-z/api-tests' test",
+    "test:api": "bun run --filter='@got/api-tests' test",
     "dev": "bun run --filter='*' dev",
     "clean": "bun run --filter='*' clean"
   },

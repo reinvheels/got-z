@@ -1,17 +1,17 @@
 import { z } from 'zod';
-import { gotzApiContract } from './contract';
-export { gotzApiContract };
+import { gotApiContract } from './contract';
+export { gotApiContract };
 export type {
   ContractStatus,
   ExampleSpec,
-  GotzApiContract,
+  GotApiContract,
   KeyGrammarSpec,
   OperationSpec,
   PathItemSpec,
   TokenMapSpec,
   TokenSpec,
 } from './define';
-export { defineGotzContract } from './define';
+export { defineGotContract } from './define';
 
 // Node schema
 export const NodeSchema = z.record(z.string(), z.any());
@@ -39,6 +39,6 @@ export type PushResponse = z.infer<typeof PushResponseSchema>;
 export type PullRequest = z.infer<typeof PullRequestSchema>;
 export type PullResponse = z.infer<typeof PullResponseSchema>;
 
-export const Rights = gotzApiContract.xGotzTokens.rights;
-export const EdgeDirection = gotzApiContract.xGotzTokens.edgeDirections;
-export const Prefixes = gotzApiContract.xGotzTokens.prefixes;
+export const Rights = gotApiContract.xGotTokens.rights;
+export const EdgeDirection = gotApiContract.xGotTokens.edgeDirections;
+export const Prefixes = gotApiContract.xGotTokens.prefixes;

@@ -6,7 +6,7 @@ Accepted / Deferred.
 
 ## Decision
 
-Got-Z should validate `/push` and `/pull` requests inside the Zig runtime before accepting them.
+Got should validate `/push` and `/pull` requests inside the Zig runtime before accepting them.
 
 For `/push`, the runtime should perform full request validation during the first traversal or serialization pass. An invalid push should fail gracefully, should not be appended to persistence, and should not mutate the graph.
 

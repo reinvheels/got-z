@@ -53,7 +53,7 @@ pub fn main(init: std.process.Init) !void {
 fn resolveConfig(init: std.process.Init) !RuntimeConfig {
     var config = RuntimeConfig{};
 
-    if (init.environ_map.get("GOT_Z_PORT")) |value| {
+    if (init.environ_map.get("GOT_PORT")) |value| {
         config.port = try parsePort(value);
     }
 

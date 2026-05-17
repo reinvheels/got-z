@@ -66,7 +66,7 @@ export async function startRuntime(
     stderr: "ignore",
     env: {
       ...process.env,
-      GOT_Z_PORT: String(port),
+      GOT_PORT: String(port),
     },
   });
 
@@ -126,7 +126,7 @@ export async function getFreePort(): Promise<number> {
 }
 
 export async function waitForWalEntries(dataDir: string, expectedEntries: number): Promise<void> {
-  const walPath = `${dataDir}/got-z.wal`;
+  const walPath = `${dataDir}/got.wal`;
   const deadline = Date.now() + 5000;
 
   while (Date.now() < deadline) {
@@ -139,7 +139,7 @@ export async function waitForWalEntries(dataDir: string, expectedEntries: number
     await Bun.sleep(25);
   }
 
-  throw new Error(`got-z.wal did not reach ${expectedEntries} entries in ${dataDir}`);
+  throw new Error(`got.wal did not reach ${expectedEntries} entries in ${dataDir}`);
 }
 
 function countWalEntries(content: string): number {

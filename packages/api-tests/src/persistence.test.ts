@@ -23,7 +23,7 @@ afterEach(async () => {
 test("runtime persists pushed graph data across restart", async () => {
   await ensureRuntimeBinary();
 
-  const dataDir = await createTempDataDir("got-z-persistence");
+  const dataDir = await createTempDataDir("got-persistence");
   tempDirs.push(dataDir);
 
   const port = await getFreePort();
@@ -85,7 +85,7 @@ test("runtime persists pushed graph data across restart", async () => {
 test("runtime is ephemeral by default", async () => {
   await ensureRuntimeBinary();
 
-  const dataDir = await createTempDataDir("got-z-ephemeral");
+  const dataDir = await createTempDataDir("got-ephemeral");
   tempDirs.push(dataDir);
 
   const port = await getFreePort();
@@ -107,7 +107,7 @@ test("runtime is ephemeral by default", async () => {
   });
 
   expect(response).toEqual({});
-  expect(await Bun.file(`${dataDir}/got-z.wal`).exists()).toBe(false);
+  expect(await Bun.file(`${dataDir}/got.wal`).exists()).toBe(false);
 });
 
 async function trackedStartRuntime(
