@@ -87,6 +87,38 @@ The harness should use the root got query primitives as two complementary thinki
 
 Cluster discovery should follow the cluster vocabulary defined in the root `plan/VISION.md`: ego clusters, typed neighborhoods, evidence clusters, tension clusters, task clusters, temporal clusters, similar-shape clusters, and community clusters. The harness owns when to ask for each cluster type and how to render it into model context.
 
+## Thinking Manager
+
+The harness should have a thinking manager that decides which retrieval and reflection modes to run during each macro-cycle. A macro-cycle may be a user turn, a tool-action sequence, a commit flow, a debugging loop, or a handoff. The manager should not pick exactly one thinking mode; it should compose modes as needed.
+
+Example macro-cycle:
+
+```txt
+task cluster -> sequential edge discovery -> evidence cluster -> tension check -> render context -> act
+```
+
+The thinking manager owns:
+
+- Mode selection: decide when to use focused sequential retrieval, visual cluster discovery, evidence gathering, tension checking, temporal recall, or old-memory expansion.
+- Query state: track seeds, frontier nodes, activated memories, visited nodes, budgets, score thresholds, and unresolved evidence gaps.
+- Working context: decide which activated memories enter the LLM context and which retrieved neighbors stay out.
+- Feedback handling: treat user corrections as high-priority signals that update both durable memory and immediate working context.
+
+User correction is a first-class lifecycle event. When the user corrects the agent, the manager should classify the correction, store it with high-confidence provenance, update or supersede the mistaken memory, and immediately re-query the affected nodes or clusters so the correction is active in the current context. A correction should not only be written for later; it should affect the next answer or action in the same conversation.
+
+Correction handling should usually run a small targeted cycle:
+
+```txt
+capture correction
+  -> write corrected fact/preference/procedure/decision or tension
+  -> mark contradicted or superseded memory where possible
+  -> re-query affected node, edge, task cluster, or tension cluster
+  -> render the corrected context
+  -> continue with updated state
+```
+
+This keeps the harness from repeating a corrected mistake. The user telling the agent "that is wrong", "use the current package increment", or "memory must only come from got runtime" should become both durable memory and active retrieval bias for future turns.
+
 ## got-LLM Translation Layer
 
 The harness needs a translation layer between LLM-friendly natural language and got-friendly graph JSON. Raw graph JSON should be treated as an intermediate representation, not as the final prompt format.
