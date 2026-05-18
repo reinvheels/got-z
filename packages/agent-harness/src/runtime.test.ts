@@ -181,6 +181,45 @@ test("runtime status clears stale managed pid metadata", async () => {
   expect(await Bun.file(paths.stateFile).exists()).toBe(false);
 });
 
+test("runtime status treats permission denied pid probes as running", async () => {
+  const workspace = `${(Bun.env.TMPDIR ?? "/tmp").replace(/\/+$/, "")}/got-agent-runtime-${crypto.randomUUID()}`;
+  await $`mkdir -p ${workspace}/.got`;
+  tempDirs.push(workspace);
+
+  const config = await buildRuntimeWorkspaceConfig({
+    runtimeUrl: "http://127.0.0.1:3199",
+    runtimeBin: "/opt/got/bin/db-runtime",
+  });
+  await writeRuntimeWorkspaceConfig(workspace, config);
+
+  const paths = getRuntimePaths(workspace, config);
+  await Bun.write(paths.pidFile, "12345\n");
+  await Bun.write(paths.stateFile, "{}\n");
+
+  const originalFetch = globalThis.fetch;
+  const originalKill = process.kill;
+  globalThis.fetch = (async () => Response.json({ message: "Server running" })) as unknown as typeof fetch;
+  process.kill = (() => {
+    const error = new Error("operation not permitted");
+    (error as NodeJS.ErrnoException).code = "EPERM";
+    throw error;
+  }) as typeof process.kill;
+
+  try {
+    const status = await getRuntimeStatus(workspace);
+
+    expect(status.managed).toBe(true);
+    expect(status.pid).toBe(12345);
+    expect(status.pidRunning).toBe(true);
+    expect(status.reachable).toBe(true);
+    expect(await Bun.file(paths.pidFile).exists()).toBe(true);
+    expect(await Bun.file(paths.stateFile).exists()).toBe(true);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.kill = originalKill;
+  }
+});
+
 test("runtime start rejects a reachable runtime from another workspace", async () => {
   const workspace = `${(Bun.env.TMPDIR ?? "/tmp").replace(/\/+$/, "")}/got-agent-runtime-${crypto.randomUUID()}`;
   await $`mkdir -p ${workspace}`;

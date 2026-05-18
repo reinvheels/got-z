@@ -686,9 +686,17 @@ function isPidRunning(pid: number): boolean {
   try {
     process.kill(pid, 0);
     return true;
-  } catch {
+  } catch (error) {
+    if (isProcessProbePermissionError(error)) return true;
     return false;
   }
+}
+
+function isProcessProbePermissionError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const code = "code" in error ? String(error.code) : "";
+  const message = error.message.toLowerCase();
+  return code === "EPERM" || code === "EACCES" || message.includes("operation not permitted");
 }
 
 function resolveConfigPath(root: string, path: string): string {
