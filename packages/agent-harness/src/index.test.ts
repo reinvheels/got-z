@@ -24,13 +24,15 @@ test("initAgentHarness copies memory management skill and markdown templates", a
 
   expect(result.files.every((file) => file.action === "copied")).toBe(true);
   expect(result.files.map((file) => relativePath(workspace, file.target)).sort()).toEqual([
+    ".got/bin/got-agent-harness",
     ".codex/skills/got-memory-management/SKILL.md",
     ".got/memory/README.md",
     ".got/memory/checkpoints.md",
     ".got/memory/current.md",
     ".got/memory/open-questions.md",
+    ".got/runtime.json",
     "AGENTS.got-memory.md",
-  ]);
+  ].sort());
   expect(await Bun.file(joinPath(workspace, ".codex/skills/got-memory-management/SKILL.md")).text()).toContain(
     "The got DB runtime should be queried throughout the agent lifecycle",
   );
@@ -46,14 +48,15 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   await initAgentHarness({ targetDir: workspace });
 
   const skill = await Bun.file(joinPath(workspace, ".codex/skills/got-memory-management/SKILL.md")).text();
-  expect(skill).toContain("Readiness check: `GET /`.");
-  expect(skill).toContain("Read: `POST /pull` with raw got JSON projection requests.");
-  expect(skill).toContain("Write: `POST /push` with raw got JSON graph mutations.");
+  expect(skill).toContain("Runtime status: `./.got/bin/got-agent-harness runtime status`.");
+  expect(skill).toContain("Runtime start: `./.got/bin/got-agent-harness runtime start`.");
+  expect(skill).toContain("Read: `./.got/bin/got-agent-harness pull` wraps `POST /pull`");
+  expect(skill).toContain("Write: `./.got/bin/got-agent-harness push` wraps `POST /push`");
   expect(skill).toContain("treat this skill as active by default");
   expect(skill).toContain("The user should not have to mention got memory management in every prompt");
   expect(skill).toContain("Run routine memory lifecycle work quietly");
   expect(skill).toContain("Do not announce every lifecycle hook");
-  expect(skill).toContain("Localhost access may be sandboxed");
+  expect(skill).toContain("Use the workspace-local harness CLI instead of direct `curl`");
   expect(skill).toContain("request the client's permission");
   expect(skill).toContain("Only fall back to markdown after the permitted retry fails");
   expect(skill).toContain("Do not read runtime storage files as a memory source");
@@ -81,7 +84,8 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(current).toContain("- URL: http://127.0.0.1:3001");
   expect(current).toContain("- Port: 3001");
   expect(current).toContain("- Working directory: .got/db");
-  expect(current).toContain("- Readiness check: `GET /`.");
+  expect(current).toContain("- Runtime status: `./.got/bin/got-agent-harness runtime status`.");
+  expect(current).toContain("- Runtime start: `./.got/bin/got-agent-harness runtime start`.");
   expect(current).toContain("- Exchange format: raw got JSON.");
   expect(current).toContain("## Memory Metadata Defaults");
   expect(current).toContain("`source`");
@@ -93,7 +97,7 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(agents).toContain("got memory management is active in this workspace by default");
   expect(agents).toContain("The user does not need to mention it in each prompt");
   expect(agents).toContain("Run routine memory lifecycle work quietly");
-  expect(agents).toContain("If localhost runtime checks fail in a sandboxed client");
+  expect(agents).toContain("If harness runtime commands fail in a sandboxed client");
   expect(agents).toContain("Treat markdown fallback as the last step");
   expect(agents).toContain("Do not read runtime storage files as memory");
   expect(agents).toContain("If `/pull` returns no relevant memory");
@@ -107,6 +111,7 @@ test("initAgentHarness renders runtime config and creates runtime cwd", async ()
     workspaceName: "memory lab",
     runtimeUrl: "http://127.0.0.1:3199",
     runtimeCwd: ".got/runtime-data",
+    runtimeBin: "/opt/got/bin/db-runtime",
     persistent: true,
   });
 
@@ -115,12 +120,19 @@ test("initAgentHarness renders runtime config and creates runtime cwd", async ()
   expect(current).toContain("- URL: http://127.0.0.1:3199");
   expect(current).toContain("- Port: 3199");
   expect(current).toContain("- Working directory: .got/runtime-data");
+  expect(current).toContain("- Binary: /opt/got/bin/db-runtime");
   expect(current).toContain("- Persistence: enabled (--persistent expected).");
-  expect(current).toContain("`(cd .got/runtime-data && GOT_PORT=3199 db-runtime --port 3199 --persistent)`");
+  expect(current).toContain("`./.got/bin/got-agent-harness runtime start`");
   expect(await directoryExists(joinPath(workspace, ".got/runtime-data"))).toBe(true);
-  expect(result.runtime.command).toBe(
-    "(cd .got/runtime-data && GOT_PORT=3199 db-runtime --port 3199 --persistent)",
-  );
+  expect(await Bun.file(joinPath(workspace, ".got/runtime.json")).json()).toMatchObject({
+    url: "http://127.0.0.1:3199",
+    port: "3199",
+    cwd: ".got/runtime-data",
+    bin: "/opt/got/bin/db-runtime",
+    persistent: true,
+  });
+  expect(await Bun.file(joinPath(workspace, ".got/bin/got-agent-harness")).text()).toContain("exec bun");
+  expect(result.runtime.command).toBe("./.got/bin/got-agent-harness runtime start");
 });
 
 test("initAgentHarness can wire AGENTS.md idempotently", async () => {
@@ -176,8 +188,10 @@ test("initAgentHarness dry run reports bootstrap actions without writing", async
   expect(result.files.every((file) => file.action.startsWith("would-"))).toBe(true);
   expect(await Bun.file(joinPath(workspace, "AGENTS.md")).exists()).toBe(false);
   expect(await Bun.file(joinPath(workspace, ".got/memory/current.md")).exists()).toBe(false);
+  expect(await Bun.file(joinPath(workspace, ".got/runtime.json")).exists()).toBe(false);
+  expect(await Bun.file(joinPath(workspace, ".got/bin/got-agent-harness")).exists()).toBe(false);
   expect(await directoryExists(joinPath(workspace, ".got/db"))).toBe(false);
-  expect(result.runtime.command).toBe("(cd .got/db && GOT_PORT=3199 db-runtime --port 3199 --persistent)");
+  expect(result.runtime.command).toBe("./.got/bin/got-agent-harness runtime start");
 });
 
 test("initAgentHarness skips existing files unless force is enabled", async () => {

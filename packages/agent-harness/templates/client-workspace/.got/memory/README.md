@@ -10,11 +10,14 @@ Agents should run routine memory lifecycle work quietly. Do not announce every l
 
 ## MVP Runtime Contract
 
-- Runtime readiness check: `GET /`.
-- Read path: `POST /pull` with raw got JSON.
-- Write path: `POST /push` with raw got JSON.
+- Runtime status: `./.got/bin/got-agent-harness runtime status`.
+- Runtime start: `./.got/bin/got-agent-harness runtime start`.
+- Runtime stop: `./.got/bin/got-agent-harness runtime stop`.
+- Read path: `./.got/bin/got-agent-harness pull` wraps `POST /pull` with raw got JSON.
+- Write path: `./.got/bin/got-agent-harness push` wraps `POST /push` with raw got JSON.
 - Persistence mode and working directory are configured outside these markdown files.
-- If localhost runtime checks fail in a sandboxed client, request the available permission, escalation, or unsandboxed command path for localhost and retry before declaring the runtime unavailable.
+- `runtime start` is a long-running command for Codex background tool sessions; use `runtime start --detach` only when starting from a normal terminal.
+- If harness runtime commands fail in a sandboxed client, request the available permission, escalation, or unsandboxed command path for `./.got/bin/got-agent-harness` and retry before declaring the runtime unavailable.
 - If the runtime is still unavailable after that retry, use these markdown files as fallback and record that memory was not refreshed.
 - Do not read runtime storage internals such as `.got/db/got.wal`, snapshots, or checkpoints as a memory source. Only the got HTTP API and these markdown fallback files are valid memory sources for the harness.
 

@@ -1,4 +1,16 @@
 import { $ } from "bun";
+import {
+  basename,
+  buildRuntimeWorkspaceConfig,
+  defaultRuntimeCwd,
+  defaultRuntimeUrl,
+  joinPath,
+  normalizeRuntimeUrl,
+  resolvePath,
+  shellQuote,
+  writeRuntimeWorkspaceConfig,
+  type RuntimeWorkspaceConfig,
+} from "./runtime";
 
 export type InitAgentHarnessOptions = {
   readonly targetDir?: string;
@@ -8,6 +20,7 @@ export type InitAgentHarnessOptions = {
   readonly workspaceName?: string;
   readonly runtimeUrl?: string;
   readonly runtimeCwd?: string;
+  readonly runtimeBin?: string;
   readonly persistent?: boolean;
 };
 
@@ -27,15 +40,19 @@ export type InitAgentHarnessRuntime = {
   readonly url: string;
   readonly port: string;
   readonly cwd: string;
+  readonly bin: string;
   readonly persistent: boolean;
+  readonly pidFile: string;
+  readonly logFile: string;
+  readonly stateFile: string;
+  readonly cliCommand: string;
   readonly command: string;
 };
 
 const templateRoot = joinPath(import.meta.dir, "..", "templates", "client-workspace");
-const defaultRuntimeUrl = "http://127.0.0.1:3001";
-const defaultRuntimeCwd = ".got/db";
 const agentsStartMarker = "<!-- got-memory-management:start -->";
 const agentsEndMarker = "<!-- got-memory-management:end -->";
+const harnessShimPath = ".got/bin/got-agent-harness";
 
 const templateFiles = [
   {
@@ -72,7 +89,13 @@ export async function initAgentHarness(options: InitAgentHarnessOptions = {}): P
   const runtimeUrl = normalizeRuntimeUrl(options.runtimeUrl ?? defaultRuntimeUrl);
   const runtimeCwd = options.runtimeCwd ?? defaultRuntimeCwd;
   const persistent = options.persistent ?? false;
-  const runtime = buildRuntimeConfig(runtimeUrl, runtimeCwd, persistent);
+  const runtimeConfig = await buildRuntimeWorkspaceConfig({
+    runtimeUrl,
+    runtimeCwd,
+    runtimeBin: options.runtimeBin,
+    persistent,
+  });
+  const runtime = buildInitRuntime(runtimeConfig);
 
   if (!(await directoryExists(targetDir))) {
     throw new Error(`Target workspace does not exist: ${targetDir}`);
@@ -108,6 +131,9 @@ export async function initAgentHarness(options: InitAgentHarnessOptions = {}): P
     files.push({ source, target, action: "copied" });
   }
 
+  files.push(await writeRuntimeConfigFile(targetDir, runtimeConfig, force, dryRun));
+  files.push(await writeHarnessShim(targetDir, force, dryRun));
+
   if (options.withAgents) {
     files.push(await applyAgentsInclude(targetDir, force, dryRun));
   }
@@ -125,62 +151,18 @@ async function directoryExists(path: string): Promise<boolean> {
   return result.exitCode === 0;
 }
 
-function resolvePath(path: string): string {
-  if (path.startsWith("/")) return stripTrailingSlash(path);
-  return joinPath(process.cwd(), path);
-}
-
-function joinPath(...parts: readonly string[]): string {
-  const path = parts
-    .filter((part) => part.length > 0)
-    .join("/")
-    .replaceAll(/\/+/g, "/")
-    .replaceAll("/./", "/");
-
-  const segments: string[] = [];
-  const absolute = path.startsWith("/");
-
-  for (const segment of path.split("/")) {
-    if (segment.length === 0 || segment === ".") continue;
-    if (segment === "..") {
-      segments.pop();
-      continue;
-    }
-    segments.push(segment);
-  }
-
-  return `${absolute ? "/" : ""}${segments.join("/")}`;
-}
-
-function stripTrailingSlash(path: string): string {
-  if (path === "/") return path;
-  return path.replace(/\/+$/, "");
-}
-
-function basename(path: string): string {
-  const normalized = stripTrailingSlash(path);
-  const parts = normalized.split("/");
-  return parts[parts.length - 1] || "workspace";
-}
-
-function normalizeRuntimeUrl(value: string): string {
-  const url = new URL(value);
-  if (!url.port) url.port = "3001";
-  return url.toString().replace(/\/$/, "");
-}
-
-function buildRuntimeConfig(runtimeUrl: string, runtimeCwd: string, persistent: boolean): InitAgentHarnessRuntime {
-  const url = new URL(runtimeUrl);
-  const port = url.port || "3001";
-  const persistentFlag = persistent ? " --persistent" : "";
-  const command = `(cd ${shellQuote(runtimeCwd)} && GOT_PORT=${port} db-runtime --port ${port}${persistentFlag})`;
-
+function buildInitRuntime(config: RuntimeWorkspaceConfig): InitAgentHarnessRuntime {
   return {
-    url: runtimeUrl,
-    port,
-    cwd: runtimeCwd,
-    persistent,
-    command,
+    url: config.url,
+    port: config.port,
+    cwd: config.cwd,
+    bin: config.bin,
+    persistent: config.persistent,
+    pidFile: config.pidFile,
+    logFile: config.logFile,
+    stateFile: config.stateFile,
+    cliCommand: `./${harnessShimPath}`,
+    command: `./${harnessShimPath} runtime start`,
   };
 }
 
@@ -208,10 +190,13 @@ function renderCurrentState(input: { workspaceName: string; runtime: InitAgentHa
 - URL: ${runtime.url}
 - Port: ${runtime.port}
 - Working directory: ${runtime.cwd}
+- Binary: ${runtime.bin}
 - Persistence: ${persistence}.
-- Readiness check: \`GET /\`.
-- Read endpoint: \`POST /pull\`.
-- Write endpoint: \`POST /push\`.
+- Runtime status: \`${runtime.cliCommand} runtime status\`.
+- Runtime start: \`${runtime.cliCommand} runtime start\`.
+- Runtime stop: \`${runtime.cliCommand} runtime stop\`.
+- Read endpoint: \`${runtime.cliCommand} pull\` wraps \`POST /pull\`.
+- Write endpoint: \`${runtime.cliCommand} push\` wraps \`POST /push\`.
 - Exchange format: raw got JSON.
 
 ## Lifecycle Hooks
@@ -236,8 +221,9 @@ function renderCurrentState(input: { workspaceName: string; runtime: InitAgentHa
 
 ## Next Steps
 
-- Start the got DB runtime before starting Codex:
+- Let Codex start or check the got DB runtime through the harness CLI:
   - \`${runtime.command}\`
+  - \`${runtime.cliCommand} runtime status\`
 
 ## Last Verified
 
@@ -249,6 +235,72 @@ function renderCurrentState(input: { workspaceName: string; runtime: InitAgentHa
 - \`scope\`: workspace.
 - \`recency\`: initial setup.
 - \`last_verified\`: not verified.
+`;
+}
+
+async function writeRuntimeConfigFile(
+  targetDir: string,
+  runtime: RuntimeWorkspaceConfig,
+  force: boolean,
+  dryRun: boolean,
+): Promise<InitAgentHarnessFileResult> {
+  const target = joinPath(targetDir, ".got/runtime.json");
+  const exists = await Bun.file(target).exists();
+
+  if (dryRun) {
+    return {
+      source: "generated",
+      target,
+      action: exists && !force ? "would-skip" : "would-copy",
+    };
+  }
+
+  if (exists && !force) {
+    return { source: "generated", target, action: "skipped" };
+  }
+
+  await writeRuntimeWorkspaceConfig(targetDir, runtime);
+  return { source: "generated", target, action: "copied" };
+}
+
+async function writeHarnessShim(
+  targetDir: string,
+  force: boolean,
+  dryRun: boolean,
+): Promise<InitAgentHarnessFileResult> {
+  const target = joinPath(targetDir, harnessShimPath);
+  const exists = await Bun.file(target).exists();
+
+  if (dryRun) {
+    return {
+      source: "generated",
+      target,
+      action: exists && !force ? "would-skip" : "would-copy",
+    };
+  }
+
+  if (exists && !force) {
+    return { source: "generated", target, action: "skipped" };
+  }
+
+  await Bun.write(target, createHarnessShim(await resolveHarnessCliPath()));
+  await $`chmod +x ${target}`.quiet();
+  return { source: "generated", target, action: "copied" };
+}
+
+async function resolveHarnessCliPath(): Promise<string> {
+  const candidates = [joinPath(import.meta.dir, "cli.ts"), joinPath(import.meta.dir, "cli.js")];
+
+  for (const candidate of candidates) {
+    if (await Bun.file(candidate).exists()) return candidate;
+  }
+
+  return "got-agent-harness";
+}
+
+function createHarnessShim(cliPath: string): string {
+  return `#!/usr/bin/env sh
+exec bun ${shellQuote(cliPath)} "$@"
 `;
 }
 
@@ -301,9 +353,4 @@ function renderAgentsFile(current: string, block: string): string {
 
 function joinSections(...sections: readonly string[]): string {
   return `${sections.filter((section) => section.length > 0).join("\n\n")}\n`;
-}
-
-function shellQuote(value: string): string {
-  if (/^[A-Za-z0-9_./:-]+$/.test(value)) return value;
-  return `'${value.replaceAll("'", "'\\''")}'`;
 }
