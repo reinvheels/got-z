@@ -17,7 +17,7 @@ async function createTempWorkspace(): Promise<string> {
   return dir;
 }
 
-test("initAgentHarness copies skill and memory markdown templates", async () => {
+test("initAgentHarness copies memory management skill and markdown templates", async () => {
   const workspace = await createTempWorkspace();
 
   const result = await initAgentHarness({ targetDir: workspace });
