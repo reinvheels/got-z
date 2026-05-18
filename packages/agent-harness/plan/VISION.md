@@ -6,7 +6,7 @@ The lifecycle is outside the got runtime. got is the graph storage backend. The 
 
 The LLM is the reasoner, the harness is the scheduler, and got is the memory backend. Lifecycle work should be invoked by deterministic harness orchestration around model calls and tool actions, not by relying on the LLM to remember memory-management instructions inside free-form reasoning.
 
-got memory management should be client-agnostic. Codex-compatible skills and markdown state files are one installation shape, not the product boundary.
+got memory management should be client-agnostic. Codex-compatible skills and markdown bootstrap/configuration files are one installation shape, not the product boundary.
 
 ## Memory Lifecycle
 

@@ -7,9 +7,9 @@ Completed.
 ## Scope
 
 - Provide an init command that installs got memory management into a client workspace.
-- Install Codex-compatible lifecycle instructions and markdown fallback templates.
-- Require the got DB runtime as the primary memory backend when configured.
-- Keep markdown as bootstrap, fallback, and checkpoint material.
+- Install Codex-compatible lifecycle instructions and initial markdown bootstrap templates.
+- Require got-backed memory when a got runtime is configured.
+- Keep markdown limited to bootstrap/configuration material.
 - Define deterministic lifecycle hooks around model calls and tool actions.
 - Name the MVP memory object vocabulary and minimum metadata.
 - Allow raw got JSON as the MVP exchange format while naming future translation responsibilities.
@@ -37,3 +37,6 @@ Completed.
 
 - The next package increment can add a real runtime client boundary for `GET /`, `POST /pull`, and `POST /push` without introducing autonomous lifecycle execution.
 
+## Superseded Notes
+
+- Increment `0003` made got runtime the only memory source. Markdown files are no longer memory, checkpoint, or recovery state.

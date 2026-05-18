@@ -2,7 +2,7 @@
 
 ## Active Increment
 
-@got/agent-harness/0003 - runtime CLI boundary.
+@got/agent-harness/0003 - runtime CLI boundary. Completed; awaiting an explicitly started next increment.
 
 ## Goal
 

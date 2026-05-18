@@ -17,7 +17,7 @@ Completed.
 - `initAgentHarness` now accepts `withAgents`, `workspaceName`, `runtimeUrl`, `runtimeCwd`, and `persistent` options.
 - `got-agent-harness init` now supports `--with-agents`, `--workspace-name`, `--runtime-url`, `--runtime-cwd`, and `--persistent`.
 - `AGENTS.md` can be created or updated idempotently with got memory-management markers.
-- `.got/memory/current.md` is rendered with workspace identity, runtime URL, port, working directory, persistence expectation, lifecycle hooks, and a runtime start command.
+- `.got/memory/current.md` is rendered with workspace identity, runtime URL, port, working directory, persistence expectation, lifecycle hooks, and runtime commands.
 - The configured runtime working directory defaults to `.got/db` and is created during init.
 - Dry-run reports intended actions without writing files or creating directories.
 
@@ -34,4 +34,3 @@ Completed.
 ## Follow-Up
 
 - Add a package-owned runtime client boundary for readiness, pull, and push using raw got JSON.
-
