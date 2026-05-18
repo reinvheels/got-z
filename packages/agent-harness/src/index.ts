@@ -45,6 +45,7 @@ export type InitAgentHarnessRuntime = {
   readonly pidFile: string;
   readonly logFile: string;
   readonly stateFile: string;
+  readonly lockFile: string;
   readonly cliCommand: string;
   readonly command: string;
 };
@@ -153,8 +154,9 @@ function buildInitRuntime(config: RuntimeWorkspaceConfig): InitAgentHarnessRunti
     pidFile: config.pidFile,
     logFile: config.logFile,
     stateFile: config.stateFile,
+    lockFile: config.lockFile,
     cliCommand: `./${harnessShimPath}`,
-    command: `./${harnessShimPath} runtime start`,
+    command: `./${harnessShimPath} runtime ensure`,
   };
 }
 
@@ -177,11 +179,13 @@ function renderCurrentState(input: { workspaceName: string; runtime: InitAgentHa
 - Working directory: ${runtime.cwd}
 - Binary: ${runtime.bin}
 - Persistence: ${persistence}.
+- Runtime ensure: \`${runtime.cliCommand} runtime ensure\`.
 - Runtime status: \`${runtime.cliCommand} runtime status\`.
-- Runtime start: \`${runtime.cliCommand} runtime start\`.
+- Runtime start: \`${runtime.cliCommand} runtime start\` for an explicit foreground debug run.
 - Runtime stop: \`${runtime.cliCommand} runtime stop\`.
-- Read endpoint: \`${runtime.cliCommand} pull\` wraps \`POST /pull\`.
-- Write endpoint: \`${runtime.cliCommand} push\` wraps \`POST /push\`.
+- Runtime lock path: ${runtime.lockFile}
+- Read endpoint: \`${runtime.cliCommand} pull\` ensures the runtime and wraps \`POST /pull\`.
+- Write endpoint: \`${runtime.cliCommand} push\` ensures the runtime and wraps \`POST /push\`.
 - Exchange format: raw got JSON.
 
 ## Lifecycle Hooks
@@ -196,6 +200,7 @@ function renderCurrentState(input: { workspaceName: string; runtime: InitAgentHa
 
 - Let Codex start or check the got DB runtime through the harness CLI:
   - \`${runtime.command}\`
+  - \`${runtime.cliCommand} pull\`
   - \`${runtime.cliCommand} runtime status\`
 
 ## Memory Source Rule

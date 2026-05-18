@@ -4,11 +4,11 @@ got memory management is active in this workspace by default. The user does not 
 
 The got DB runtime is the only memory source. Markdown files under `.got/memory/` are runtime bootstrap/configuration only. Do not answer memory questions from Markdown and do not treat Markdown as memory.
 
-Before substantive work, read `.got/memory/current.md` only to find workspace identity and runtime configuration. Then use `./.got/bin/got-agent-harness runtime status` to check the runtime, `./.got/bin/got-agent-harness runtime start` if it is not reachable, and `./.got/bin/got-agent-harness pull` to query the default `got-memory` anchor.
+Before substantive work, read `.got/memory/current.md` only to find workspace identity and runtime configuration. Then use `./.got/bin/got-agent-harness pull` to query the default `got-memory` anchor; `pull` ensures the workspace singleton runtime before it sends `POST /pull`.
 
 If harness runtime commands fail in a sandboxed client, request the available permission, escalation, or unsandboxed command path for `./.got/bin/got-agent-harness` and retry before declaring memory unavailable. If the runtime still cannot be reached, say that got memory is unavailable; do not substitute Markdown memory.
 
-`./.got/bin/got-agent-harness runtime start` is a long-running command intended to stay open as a Codex background tool session. Use `runtime start --detach` only when explicitly starting it from a normal terminal.
+Use `./.got/bin/got-agent-harness runtime ensure` for an explicit runtime check/start. It uses workspace PID/state metadata and a runtime lock so concurrent chats do not start duplicate runtimes. Use `runtime start --detach` only when explicitly debugging detached process behavior.
 
 Do not read runtime storage files as memory. Files such as `.got/db/got.wal`, snapshots, checkpoints, or other DB runtime internals are implementation details.
 

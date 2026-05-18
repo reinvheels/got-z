@@ -103,9 +103,41 @@ test("runtime config is workspace-local and spawn command uses configured binary
   expect(paths.cwd).toBe(`${workspace}/.got/runtime-data`);
   expect(paths.pidFile).toBe(`${workspace}/.got/runtime.pid`);
   expect(paths.logFile).toBe(`${workspace}/.got/runtime.log`);
+  expect(paths.lockFile).toBe(`${workspace}/.got/runtime.lock`);
   expect(script).toContain(`cd ${workspace}/.got/runtime-data`);
   expect(script).toContain("GOT_PORT=3199 /opt/got/bin/db-runtime --port 3199 --persistent");
   expect(script).toContain(`>> ${workspace}/.got/runtime.log 2>&1`);
+});
+
+test("runtime config defaults the singleton lock path for older config files", async () => {
+  const workspace = `${(Bun.env.TMPDIR ?? "/tmp").replace(/\/+$/, "")}/got-agent-runtime-${crypto.randomUUID()}`;
+  await $`mkdir -p ${workspace}/.got`;
+  tempDirs.push(workspace);
+
+  await Bun.write(
+    `${workspace}/.got/runtime.json`,
+    `${JSON.stringify(
+      {
+        version: 1,
+        url: "http://127.0.0.1:3199",
+        port: "3199",
+        cwd: ".got/db",
+        bin: "/opt/got/bin/db-runtime",
+        persistent: true,
+        pidFile: ".got/runtime.pid",
+        logFile: ".got/runtime.log",
+        stateFile: ".got/runtime.state.json",
+      },
+      null,
+      2,
+    )}\n`,
+  );
+
+  const loaded = await loadRuntimeWorkspaceConfig(workspace);
+  const paths = getRuntimePaths(workspace, loaded);
+
+  expect(loaded.lockFile).toBe(".got/runtime.lock");
+  expect(paths.lockFile).toBe(`${workspace}/.got/runtime.lock`);
 });
 
 test("default memory pull query targets the stable memory anchor", () => {

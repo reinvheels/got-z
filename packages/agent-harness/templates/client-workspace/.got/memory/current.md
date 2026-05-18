@@ -15,9 +15,11 @@ This file is configuration bootstrap only. It is not memory.
 - Working directory: not configured.
 - Binary: not configured.
 - Persistence: not verified.
+- Runtime ensure: not configured.
 - Runtime status: not configured.
 - Runtime start: not configured.
 - Runtime stop: not configured.
+- Runtime lock path: not configured.
 - Read command: not configured.
 - Write command: not configured.
 - Exchange format: raw got JSON.

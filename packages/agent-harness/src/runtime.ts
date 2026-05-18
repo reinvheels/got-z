@@ -10,6 +10,7 @@ export type RuntimeWorkspaceConfig = {
   readonly pidFile: string;
   readonly logFile: string;
   readonly stateFile: string;
+  readonly lockFile: string;
 };
 
 export type RuntimeConfigInput = {
@@ -25,6 +26,7 @@ export type RuntimePaths = {
   readonly pidFile: string;
   readonly logFile: string;
   readonly stateFile: string;
+  readonly lockFile: string;
   readonly configFile: string;
 };
 
@@ -71,6 +73,7 @@ export const defaultRuntimeCwd = ".got/db";
 export const defaultRuntimePidFile = ".got/runtime.pid";
 export const defaultRuntimeLogFile = ".got/runtime.log";
 export const defaultRuntimeStateFile = ".got/runtime.state.json";
+export const defaultRuntimeLockFile = ".got/runtime.lock";
 export const runtimeConfigFile = ".got/runtime.json";
 export const defaultMemoryNodeId = "got-memory";
 export const defaultMemoryPullQuery = {
@@ -90,6 +93,9 @@ export const defaultMemoryPullQuery = {
 const healthTimeoutMs = 500;
 const startTimeoutMs = 5000;
 const stopTimeoutMs = 3000;
+const lockTimeoutMs = 5000;
+const lockPollMs = 100;
+const lockStaleMs = 30000;
 
 export class GotRuntimeRequestError extends Error {
   readonly status?: number;
@@ -200,6 +206,7 @@ export async function buildRuntimeWorkspaceConfig(input: RuntimeConfigInput = {}
     pidFile: defaultRuntimePidFile,
     logFile: defaultRuntimeLogFile,
     stateFile: defaultRuntimeStateFile,
+    lockFile: defaultRuntimeLockFile,
   };
 }
 
@@ -223,6 +230,7 @@ export async function loadRuntimeWorkspaceConfig(
     pidFile: stored.pidFile ?? base.pidFile,
     logFile: stored.logFile ?? base.logFile,
     stateFile: stored.stateFile ?? base.stateFile,
+    lockFile: stored.lockFile ?? base.lockFile,
   };
 }
 
@@ -244,6 +252,7 @@ export function getRuntimePaths(targetDir: string, config: RuntimeWorkspaceConfi
     pidFile: resolveConfigPath(root, config.pidFile),
     logFile: resolveConfigPath(root, config.logFile),
     stateFile: resolveConfigPath(root, config.stateFile),
+    lockFile: resolveConfigPath(root, config.lockFile),
     configFile: joinPath(root, runtimeConfigFile),
   };
 }
@@ -292,49 +301,60 @@ export async function startRuntime(
 ): Promise<RuntimeStartResult> {
   const config = await loadRuntimeWorkspaceConfig(targetDir, overrides);
   const paths = getRuntimePaths(targetDir, config);
-  const status = await getRuntimeStatusForConfig(targetDir, config);
+  await ensureRuntimeDirectories(paths);
 
-  if (status.running && status.reachable) {
+  return withRuntimeLock(paths, async () => {
+    const status = await getRuntimeStatusForConfig(targetDir, config);
+
+    if (status.reachable) {
+      return {
+        status: "already-running",
+        pid: status.pid,
+        url: config.url,
+        cwd: paths.cwd,
+        logFile: paths.logFile,
+      };
+    }
+
+    if (status.pidRunning && status.pid !== undefined) {
+      await waitForRuntime(config, status.pid);
+      return {
+        status: "already-running",
+        pid: status.pid,
+        url: config.url,
+        cwd: paths.cwd,
+        logFile: paths.logFile,
+      };
+    }
+
+    const child = Bun.spawn(["sh", "-c", buildRuntimeSpawnScript(config, targetDir)], {
+      detached: true,
+      stdin: "ignore",
+      stdout: "ignore",
+      stderr: "ignore",
+    });
+    child.unref();
+
+    const pid = child.pid;
+
+    await writeRuntimeState(paths, config, pid);
+    await waitForRuntime(config, pid);
+
     return {
-      status: "already-running",
-      pid: status.pid,
+      status: "started",
+      pid,
       url: config.url,
       cwd: paths.cwd,
       logFile: paths.logFile,
     };
-  }
-
-  await ensureRuntimeDirectories(paths);
-
-  const script = buildRuntimeSpawnScript(config, targetDir);
-  const process = Bun.spawn(["sh", "-c", script], {
-    stdout: "pipe",
-    stderr: "pipe",
   });
-  const stdoutPromise = process.stdout ? new Response(process.stdout).text() : Promise.resolve("");
-  const stderrPromise = process.stderr ? new Response(process.stderr).text() : Promise.resolve("");
-  const [stdout, stderr, exitCode] = await Promise.all([stdoutPromise, stderrPromise, process.exited]);
+}
 
-  if (exitCode !== 0) {
-    throw new GotRuntimeRequestError(`failed to start got runtime: ${stderr.trim() || stdout.trim()}`);
-  }
-
-  const pid = Number.parseInt(stdout.trim(), 10);
-  if (!Number.isInteger(pid) || pid <= 0) {
-    throw new GotRuntimeRequestError(`failed to read got runtime pid from start command: ${stdout.trim()}`);
-  }
-
-  await writeRuntimeState(paths, config, pid);
-
-  await waitForRuntime(config, pid);
-
-  return {
-    status: "started",
-    pid,
-    url: config.url,
-    cwd: paths.cwd,
-    logFile: paths.logFile,
-  };
+export async function ensureRuntime(
+  targetDir = process.cwd(),
+  overrides: RuntimeConfigInput = {},
+): Promise<RuntimeStartResult> {
+  return startRuntime(targetDir, overrides);
 }
 
 export async function runRuntimeForeground(
@@ -344,52 +364,78 @@ export async function runRuntimeForeground(
 ): Promise<RuntimeForegroundResult> {
   const config = await loadRuntimeWorkspaceConfig(targetDir, overrides);
   const paths = getRuntimePaths(targetDir, config);
-  const status = await getRuntimeStatusForConfig(targetDir, config);
-
-  if (status.running && status.reachable) {
-    const result: RuntimeStartResult = {
-      status: "already-running",
-      pid: status.pid,
-      url: config.url,
-      cwd: paths.cwd,
-      logFile: paths.logFile,
-    };
-    onStarted?.(result);
-    return { ...result, exitCode: 0 };
-  }
-
   await ensureRuntimeDirectories(paths);
 
-  const child = Bun.spawn(
-    [
-      config.bin,
-      "--port",
-      config.port,
-      ...(config.persistent ? ["--persistent"] : []),
-    ],
-    {
-      cwd: paths.cwd,
-      env: {
-        ...process.env,
-        GOT_PORT: config.port,
+  const started = await withRuntimeLock(paths, async () => {
+    const status = await getRuntimeStatusForConfig(targetDir, config);
+
+    if (status.reachable) {
+      return {
+        result: {
+          status: "already-running",
+          pid: status.pid,
+          url: config.url,
+          cwd: paths.cwd,
+          logFile: paths.logFile,
+        } satisfies RuntimeStartResult,
+        child: undefined,
+      };
+    }
+
+    if (status.pidRunning && status.pid !== undefined) {
+      await waitForRuntime(config, status.pid);
+      return {
+        result: {
+          status: "already-running",
+          pid: status.pid,
+          url: config.url,
+          cwd: paths.cwd,
+          logFile: paths.logFile,
+        } satisfies RuntimeStartResult,
+        child: undefined,
+      };
+    }
+
+    const child = Bun.spawn(
+      [
+        config.bin,
+        "--port",
+        config.port,
+        ...(config.persistent ? ["--persistent"] : []),
+      ],
+      {
+        cwd: paths.cwd,
+        env: {
+          ...process.env,
+          GOT_PORT: config.port,
+        },
+        stdin: "ignore",
+        stdout: "inherit",
+        stderr: "inherit",
       },
-      stdin: "ignore",
-      stdout: "inherit",
-      stderr: "inherit",
-    },
-  );
-  const pid = child.pid;
+    );
+    const pid = child.pid;
 
-  await writeRuntimeState(paths, config, pid);
+    await writeRuntimeState(paths, config, pid);
 
-  const result: RuntimeStartResult = {
-    status: "started",
-    pid,
-    url: config.url,
-    cwd: paths.cwd,
-    logFile: paths.logFile,
-  };
+    return {
+      result: {
+        status: "started",
+        pid,
+        url: config.url,
+        cwd: paths.cwd,
+        logFile: paths.logFile,
+      } satisfies RuntimeStartResult,
+      child,
+    };
+  });
+
+  const { result, child } = started;
   onStarted?.(result);
+
+  if (!child) {
+    return { ...result, exitCode: 0 };
+  }
 
   const exitCode = await child.exited;
   await cleanupRuntimeMetadata(paths);
@@ -399,23 +445,27 @@ export async function runRuntimeForeground(
 export async function stopRuntime(targetDir = process.cwd()): Promise<RuntimeStopResult> {
   const config = await loadRuntimeWorkspaceConfig(targetDir);
   const paths = getRuntimePaths(targetDir, config);
-  const pid = await readPid(paths.pidFile);
+  await ensureRuntimeDirectories(paths);
 
-  if (pid === undefined || !isPidRunning(pid)) {
+  return withRuntimeLock(paths, async () => {
+    const pid = await readPid(paths.pidFile);
+
+    if (pid === undefined || !isPidRunning(pid)) {
+      await cleanupRuntimeMetadata(paths);
+      return { status: "not-running", pid };
+    }
+
+    process.kill(pid, "SIGTERM");
+    const stopped = await waitForPidExit(pid, stopTimeoutMs);
+
+    if (!stopped && isPidRunning(pid)) {
+      process.kill(pid, "SIGKILL");
+      await waitForPidExit(pid, 1000);
+    }
+
     await cleanupRuntimeMetadata(paths);
-    return { status: "not-running", pid };
-  }
-
-  process.kill(pid, "SIGTERM");
-  const stopped = await waitForPidExit(pid, stopTimeoutMs);
-
-  if (!stopped && isPidRunning(pid)) {
-    process.kill(pid, "SIGKILL");
-    await waitForPidExit(pid, 1000);
-  }
-
-  await cleanupRuntimeMetadata(paths);
-  return { status: "stopped", pid };
+    return { status: "stopped", pid };
+  });
 }
 
 export function buildRuntimeSpawnScript(config: RuntimeWorkspaceConfig, targetDir: string): string {
@@ -429,7 +479,7 @@ export function buildRuntimeSpawnScript(config: RuntimeWorkspaceConfig, targetDi
 
   return [
     `cd ${shellQuote(paths.cwd)}`,
-    `{ nohup env GOT_PORT=${shellQuote(config.port)} ${args.join(" ")} >> ${shellQuote(paths.logFile)} 2>&1 & echo $!; }`,
+    `exec env GOT_PORT=${shellQuote(config.port)} ${args.join(" ")} >> ${shellQuote(paths.logFile)} 2>&1`,
   ].join(" && ");
 }
 
@@ -537,7 +587,73 @@ async function cleanupRuntimeMetadata(paths: RuntimePaths): Promise<void> {
 }
 
 async function ensureRuntimeDirectories(paths: RuntimePaths): Promise<void> {
-  await $`mkdir -p ${paths.cwd} ${dirname(paths.pidFile)} ${dirname(paths.logFile)} ${dirname(paths.stateFile)}`.quiet();
+  await $`mkdir -p ${paths.cwd} ${dirname(paths.pidFile)} ${dirname(paths.logFile)} ${dirname(paths.stateFile)} ${dirname(paths.lockFile)}`.quiet();
+}
+
+async function withRuntimeLock<T>(paths: RuntimePaths, fn: () => Promise<T>): Promise<T> {
+  await acquireRuntimeLock(paths.lockFile);
+
+  try {
+    return await fn();
+  } finally {
+    await releaseRuntimeLock(paths.lockFile);
+  }
+}
+
+async function acquireRuntimeLock(lockFile: string): Promise<void> {
+  const started = Date.now();
+
+  while (Date.now() - started < lockTimeoutMs) {
+    const result = await $`mkdir ${lockFile}`.quiet().nothrow();
+    if (result.exitCode === 0) {
+      await writeRuntimeLockOwner(lockFile);
+      return;
+    }
+
+    if (await isRuntimeLockStale(lockFile)) {
+      await releaseRuntimeLock(lockFile);
+      continue;
+    }
+
+    await sleep(lockPollMs);
+  }
+
+  throw new GotRuntimeRequestError(`timed out waiting for got runtime lock: ${lockFile}`);
+}
+
+async function writeRuntimeLockOwner(lockFile: string): Promise<void> {
+  await Bun.write(
+    joinPath(lockFile, "owner.json"),
+    `${JSON.stringify(
+      {
+        pid: process.pid,
+        acquiredAt: new Date().toISOString(),
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
+async function isRuntimeLockStale(lockFile: string): Promise<boolean> {
+  const ownerFile = Bun.file(joinPath(lockFile, "owner.json"));
+  if (!(await ownerFile.exists())) return false;
+
+  try {
+    const owner = (await ownerFile.json()) as { readonly pid?: unknown; readonly acquiredAt?: unknown };
+    const pid = typeof owner.pid === "number" ? owner.pid : undefined;
+    const acquiredAt = typeof owner.acquiredAt === "string" ? Date.parse(owner.acquiredAt) : Number.NaN;
+    const old = Number.isFinite(acquiredAt) && Date.now() - acquiredAt > lockStaleMs;
+
+    return (pid !== undefined && !isPidRunning(pid)) || old;
+  } catch {
+    return false;
+  }
+}
+
+async function releaseRuntimeLock(lockFile: string): Promise<void> {
+  await $`rm -f ${joinPath(lockFile, "owner.json")}`.quiet().nothrow();
+  await $`rmdir ${lockFile}`.quiet().nothrow();
 }
 
 async function writeRuntimeState(

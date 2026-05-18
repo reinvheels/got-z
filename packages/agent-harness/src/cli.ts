@@ -3,6 +3,7 @@ import { initAgentHarness } from "./index";
 import {
   GotRuntimeClient,
   defaultMemoryPullQuery,
+  ensureRuntime,
   getRuntimeStatus,
   loadRuntimeWorkspaceConfig,
   runRuntimeForeground,
@@ -168,6 +169,7 @@ Usage:
 
   got-agent-harness runtime start [target-workspace]
   got-agent-harness runtime start [target-workspace] --detach
+  got-agent-harness runtime ensure [target-workspace]
   got-agent-harness runtime status [target-workspace]
   got-agent-harness runtime stop [target-workspace]
 
@@ -177,8 +179,9 @@ Usage:
   got-agent-harness pull --file request.json
   got-agent-harness push < request.json
 
-Copies got memory management skill and markdown templates into a client workspace.
+Copies got memory management skill and bootstrap templates into a client workspace.
 Runtime commands read .got/runtime.json from the target workspace and print JSON.
+Pull and push automatically ensure the workspace singleton runtime before exchanging JSON.
 
 Options:
   --with-agents              Create or update AGENTS.md with got memory-management instructions.
@@ -187,7 +190,7 @@ Options:
   --runtime-cwd <path>       Runtime working directory. Defaults to .got/db.
   --runtime-bin <path>       db-runtime binary path. Defaults to the repo build when available.
   --persistent               Mark or start the runtime as persistent.
-  --detach                   Start runtime as a detached process instead of a long-running command.
+  --detach                   Start runtime as a detached process instead of foreground.
   --body <json>              Raw got JSON request body for pull or push. Pull without a body uses the default memory query.
   --file <path>              Read raw got JSON request body from a file.
   --dry-run                  Show intended file actions without writing files.
@@ -255,16 +258,16 @@ async function handleRuntimeCommand(options: CliOptions): Promise<void> {
   const targetDir = options.targetDir ?? process.cwd();
 
   if (!options.runtimeAction) {
-    throw new Error("Missing runtime action. Use start, status, or stop.");
+    throw new Error("Missing runtime action. Use ensure, start, status, or stop.");
   }
 
   if (options.runtimeAction === "start") {
     const overrides = {
-        runtimeUrl: options.runtimeUrl,
-        runtimeCwd: options.runtimeCwd,
-        runtimeBin: options.runtimeBin,
-        persistent: options.persistent,
-      };
+      runtimeUrl: options.runtimeUrl,
+      runtimeCwd: options.runtimeCwd,
+      runtimeBin: options.runtimeBin,
+      persistent: options.persistent,
+    };
 
     if (options.detach) {
       printJson(await startRuntime(targetDir, overrides));
@@ -273,6 +276,11 @@ async function handleRuntimeCommand(options: CliOptions): Promise<void> {
 
     const result = await runRuntimeForeground(targetDir, overrides, printJson);
     process.exit(result.exitCode);
+    return;
+  }
+
+  if (options.runtimeAction === "ensure") {
+    printJson(await ensureRuntime(targetDir, runtimeOverrides(options)));
     return;
   }
 
@@ -291,7 +299,9 @@ async function handleRuntimeCommand(options: CliOptions): Promise<void> {
 
 async function handleExchangeCommand(options: CliOptions): Promise<void> {
   const targetDir = options.targetDir ?? process.cwd();
-  const config = await loadRuntimeWorkspaceConfig(targetDir, runtimeOverrides(options));
+  const overrides = runtimeOverrides(options);
+  await ensureRuntime(targetDir, overrides);
+  const config = await loadRuntimeWorkspaceConfig(targetDir, overrides);
   const client = new GotRuntimeClient({ url: config.url });
   const body = await readRequestBody(options);
   const result = options.command === "pull" ? await client.pull(body) : await client.push(body);

@@ -20,29 +20,28 @@ Run routine memory lifecycle work quietly. Do not announce every lifecycle hook,
 When this skill is active:
 
 1. Read `.got/memory/current.md` only to discover workspace identity and got runtime configuration.
-2. Check the runtime with `./.got/bin/got-agent-harness runtime status`.
-3. If the runtime is not reachable, start it with `./.got/bin/got-agent-harness runtime start` and then check status again.
-4. If the harness CLI is blocked in a sandboxed client, request the client's permission or escalation path for `./.got/bin/got-agent-harness` and retry before treating got as unavailable.
-5. Query got with `./.got/bin/got-agent-harness pull` for the default `got-memory` anchor.
-6. If got is unavailable or returns no relevant memory, say that got memory is unavailable or empty. Do not substitute Markdown memory.
-7. Before actions, query got for relevant constraints, decisions, next steps, and verification requirements.
-8. After meaningful progress, describe durable observations as raw got JSON candidate mutations and push them to got with `./.got/bin/got-agent-harness push` when runtime access is available.
+2. Query got with `./.got/bin/got-agent-harness pull` for the default `got-memory` anchor. The command ensures the workspace singleton runtime before it sends `POST /pull`.
+3. If the harness CLI is blocked in a sandboxed client, request the client's permission or escalation path for `./.got/bin/got-agent-harness` and retry before treating got as unavailable.
+4. If got is unavailable or returns no relevant memory, say that got memory is unavailable or empty. Do not substitute Markdown memory.
+5. Before actions, query got for relevant constraints, decisions, next steps, and verification requirements.
+6. After meaningful progress, describe durable observations as raw got JSON candidate mutations and push them to got with `./.got/bin/got-agent-harness push` when runtime access is available.
 
 ## Runtime Contract
 
 The MVP assumes the got DB runtime is a local HTTP service:
 
 - Runtime status: `./.got/bin/got-agent-harness runtime status`.
-- Runtime start: `./.got/bin/got-agent-harness runtime start`.
+- Runtime ensure: `./.got/bin/got-agent-harness runtime ensure` starts or reuses the workspace singleton runtime under a lock.
+- Runtime start: `./.got/bin/got-agent-harness runtime start` is for an explicit foreground debug run.
 - Runtime stop: `./.got/bin/got-agent-harness runtime stop`.
-- Read: `./.got/bin/got-agent-harness pull` wraps `POST /pull` with raw got JSON projection requests.
-- Write: `./.got/bin/got-agent-harness push` wraps `POST /push` with raw got JSON graph mutations.
+- Read: `./.got/bin/got-agent-harness pull` ensures the runtime and wraps `POST /pull` with raw got JSON projection requests.
+- Write: `./.got/bin/got-agent-harness push` ensures the runtime and wraps `POST /push` with raw got JSON graph mutations.
 - Persistence: explicit runtime mode, configured outside this skill.
 - Data location: runtime working directory, configured outside this skill.
 
-`runtime start` is a long-running command intended to stay open as a Codex background tool session. Use `runtime start --detach` only when explicitly starting it from a normal terminal where a detached process is desired.
+`runtime ensure` is the normal agent path. It uses workspace PID/state metadata and a runtime lock so concurrent chats do not start duplicate runtimes. Use `runtime start --detach` only when explicitly debugging detached process behavior.
 
-Localhost access may be sandboxed in Codex-like clients. Use the workspace-local harness CLI instead of direct `curl`. If `runtime status`, `runtime start`, `pull`, or `push` fails with connection refused, operation not permitted, `EPERM`, `EACCES`, or a generic connection failure, do not conclude the runtime is down yet. First request the client's permission, escalation, or unsandboxed command path for `./.got/bin/got-agent-harness` and retry the same command. Only report memory unavailable after the permitted retry fails or the user declines.
+Localhost access may be sandboxed in Codex-like clients. Use the workspace-local harness CLI instead of direct `curl`. If `runtime ensure`, `runtime status`, `pull`, or `push` fails with connection refused, operation not permitted, `EPERM`, `EACCES`, or a generic connection failure, do not conclude the runtime is down yet. First request the client's permission, escalation, or unsandboxed command path for `./.got/bin/got-agent-harness` and retry the same command. Only report memory unavailable after the permitted retry fails or the user declines.
 
 Do not read runtime storage files as a memory source. Files such as `.got/db/got.wal`, snapshots, checkpoints, or other DB runtime internals are implementation details. Never parse the WAL or snapshot files to recover memory.
 
