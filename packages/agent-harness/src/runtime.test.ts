@@ -5,6 +5,8 @@ import {
   GotRuntimeRequestError,
   buildRuntimeSpawnScript,
   buildRuntimeWorkspaceConfig,
+  defaultMemoryNodeId,
+  defaultMemoryPullQuery,
   getRuntimePaths,
   loadRuntimeWorkspaceConfig,
   writeRuntimeWorkspaceConfig,
@@ -103,4 +105,21 @@ test("runtime config is workspace-local and spawn command uses configured binary
   expect(script).toContain(`cd ${workspace}/.got/runtime-data`);
   expect(script).toContain("GOT_PORT=3199 /opt/got/bin/db-runtime --port 3199 --persistent");
   expect(script).toContain(`>> ${workspace}/.got/runtime.log 2>&1`);
+});
+
+test("default memory pull query targets the stable memory anchor", () => {
+  expect(defaultMemoryNodeId).toBe("got-memory");
+  expect(defaultMemoryPullQuery).toEqual({
+    "got-memory": {
+      user_preferences: true,
+      workspace_context: true,
+      active_goal: true,
+      current_state: true,
+      recent_decisions: true,
+      open_questions: true,
+      procedures: true,
+      summaries: true,
+      last_updated: true,
+    },
+  });
 });

@@ -21,7 +21,7 @@ When this skill is active:
 2. Check the runtime with `./.got/bin/got-agent-harness runtime status` when a got runtime is configured.
 3. If the runtime is not reachable, start it with `./.got/bin/got-agent-harness runtime start` and then check status again.
 4. If the harness CLI is blocked in a sandboxed client, request the client's permission or escalation path for `./.got/bin/got-agent-harness` and retry before treating got as unavailable.
-5. Query the got DB runtime with `./.got/bin/got-agent-harness pull` for relevant workspace, user, task, decision, procedure, artifact, question, summary, and recent activity context.
+5. Query the got DB runtime with `./.got/bin/got-agent-harness pull` for the default `got-memory` anchor before using fallback files.
 6. Use markdown state only as bootstrap, fallback, or human-readable checkpoint material.
 7. Read `.got/memory/open-questions.md` when the task touches planning, architecture, or unresolved decisions.
 8. Read `.got/memory/checkpoints.md` when reconstructing recent progress or preparing a thread handoff.
@@ -48,6 +48,35 @@ Localhost access may be sandboxed in Codex-like clients. Use the workspace-local
 If the runtime is still unavailable after that retry, continue from markdown fallback state and record that got-backed memory was not refreshed.
 
 Do not read runtime storage files as a memory source. Files such as `.got/db/got.wal`, snapshots, checkpoints, or other DB runtime internals are implementation details. If `/pull` returns no relevant memory, report that the public got API did not return memory and use only the markdown fallback files. Never parse the WAL or snapshot files to recover memory.
+
+## Memory Anchor
+
+Because got pulls are explicit projections, `pull` without a body uses the harness default memory query for the stable node `got-memory`. Durable MVP memory should be written under that node so later turns can retrieve it without knowing ad hoc IDs.
+
+Use these properties on `got-memory`:
+
+- `user_preferences`: personal preferences the user wants remembered.
+- `workspace_context`: durable workspace identity and setup facts.
+- `active_goal`: current durable task direction.
+- `current_state`: compact implementation state.
+- `recent_decisions`: accepted decisions that affect future work.
+- `open_questions`: unresolved questions.
+- `procedures`: reusable working procedures.
+- `summaries`: compact summaries over multiple observations.
+- `last_updated`: timestamp or short verification note for the memory anchor.
+
+Example durable preference write:
+
+```json
+{
+  "got-memory": {
+    "user_preferences": {
+      "commit_timing": "Suggest commits only after a completed small work step, not in the middle of unfinished implementation."
+    },
+    "last_updated": "user-confirmed preference"
+  }
+}
+```
 
 ## Memory Object Vocabulary
 

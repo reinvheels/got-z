@@ -2,6 +2,7 @@
 import { initAgentHarness } from "./index";
 import {
   GotRuntimeClient,
+  defaultMemoryPullQuery,
   getRuntimeStatus,
   loadRuntimeWorkspaceConfig,
   runRuntimeForeground,
@@ -170,6 +171,7 @@ Usage:
   got-agent-harness runtime status [target-workspace]
   got-agent-harness runtime stop [target-workspace]
 
+  got-agent-harness pull [target-workspace]
   got-agent-harness pull [target-workspace] --body '<raw got JSON>'
   got-agent-harness push [target-workspace] --body '<raw got JSON>'
   got-agent-harness pull --file request.json
@@ -186,7 +188,7 @@ Options:
   --runtime-bin <path>       db-runtime binary path. Defaults to the repo build when available.
   --persistent               Mark or start the runtime as persistent.
   --detach                   Start runtime as a detached process instead of a long-running command.
-  --body <json>              Raw got JSON request body for pull or push.
+  --body <json>              Raw got JSON request body for pull or push. Pull without a body uses the default memory query.
   --file <path>              Read raw got JSON request body from a file.
   --dry-run                  Show intended file actions without writing files.
   --force                    Overwrite existing template files.`);
@@ -206,7 +208,7 @@ function printInitResult(result: Awaited<ReturnType<typeof initAgentHarness>>): 
   console.log("Use the got agent harness runtime commands from the workspace root:");
   console.log(`  ${result.runtime.command}`);
   console.log(`  ${result.runtime.cliCommand} runtime status`);
-  console.log(`  ${result.runtime.cliCommand} pull --body '{}'`);
+  console.log(`  ${result.runtime.cliCommand} pull`);
 }
 
 try {
@@ -308,10 +310,16 @@ function runtimeOverrides(options: CliOptions): RuntimeConfigInput {
 async function readRequestBody(options: CliOptions): Promise<unknown> {
   if (options.body !== undefined) return parseJsonBody(options.body);
   if (options.file !== undefined) return parseJsonBody(await Bun.file(options.file).text());
-  if (process.stdin.isTTY) return {};
+  if (process.stdin.isTTY) {
+    return options.command === "pull" ? defaultMemoryPullQuery : {};
+  }
 
   const text = await new Response(Bun.stdin.stream()).text();
-  return text.trim().length === 0 ? {} : parseJsonBody(text);
+  if (text.trim().length === 0) {
+    return options.command === "pull" ? defaultMemoryPullQuery : {};
+  }
+
+  return parseJsonBody(text);
 }
 
 function parseJsonBody(value: string): unknown {

@@ -52,6 +52,9 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(skill).toContain("Runtime start: `./.got/bin/got-agent-harness runtime start`.");
   expect(skill).toContain("Read: `./.got/bin/got-agent-harness pull` wraps `POST /pull`");
   expect(skill).toContain("Write: `./.got/bin/got-agent-harness push` wraps `POST /push`");
+  expect(skill).toContain("stable node `got-memory`");
+  expect(skill).toContain("Durable MVP memory should be written under that node");
+  expect(skill).toContain("`user_preferences`");
   expect(skill).toContain("treat this skill as active by default");
   expect(skill).toContain("The user should not have to mention got memory management in every prompt");
   expect(skill).toContain("Run routine memory lifecycle work quietly");
@@ -97,6 +100,7 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(agents).toContain("got memory management is active in this workspace by default");
   expect(agents).toContain("The user does not need to mention it in each prompt");
   expect(agents).toContain("Run routine memory lifecycle work quietly");
+  expect(agents).toContain("write durable MVP memory under the stable `got-memory` node");
   expect(agents).toContain("If harness runtime commands fail in a sandboxed client");
   expect(agents).toContain("Treat markdown fallback as the last step");
   expect(agents).toContain("Do not read runtime storage files as memory");

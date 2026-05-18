@@ -13,7 +13,7 @@ Agents should run routine memory lifecycle work quietly. Do not announce every l
 - Runtime status: `./.got/bin/got-agent-harness runtime status`.
 - Runtime start: `./.got/bin/got-agent-harness runtime start`.
 - Runtime stop: `./.got/bin/got-agent-harness runtime stop`.
-- Read path: `./.got/bin/got-agent-harness pull` wraps `POST /pull` with raw got JSON.
+- Read path: `./.got/bin/got-agent-harness pull` wraps `POST /pull` with raw got JSON and defaults to the `got-memory` anchor projection when no body is provided.
 - Write path: `./.got/bin/got-agent-harness push` wraps `POST /push` with raw got JSON.
 - Persistence mode and working directory are configured outside these markdown files.
 - `runtime start` is a long-running command for Codex background tool sessions; use `runtime start --detach` only when starting from a normal terminal.
@@ -34,6 +34,10 @@ Agents should run routine memory lifecycle work quietly. Do not announce every l
 Use these minimal memory object types in the MVP: `observation`, `episode`, `artifact`, `decision`, `question`, and `summary`.
 
 Each durable memory should include the minimum metadata that keeps fallback state useful: `source`, `scope`, `recency`, and `last_verified`.
+
+## Memory Anchor
+
+Durable MVP memory should be stored under the stable `got-memory` node because got pulls are explicit projections. The default `pull` command queries these properties: `user_preferences`, `workspace_context`, `active_goal`, `current_state`, `recent_decisions`, `open_questions`, `procedures`, `summaries`, and `last_updated`.
 
 ## Translation Responsibilities
 
