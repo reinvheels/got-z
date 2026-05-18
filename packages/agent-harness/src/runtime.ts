@@ -294,6 +294,7 @@ export async function startRuntime(
     const status = await getRuntimeStatusForConfig(targetDir, config);
 
     if (status.reachable) {
+      assertReachableRuntimeIsWorkspaceManaged(status, config);
       return {
         status: "already-running",
         pid: status.pid,
@@ -357,6 +358,7 @@ export async function runRuntimeForeground(
     const status = await getRuntimeStatusForConfig(targetDir, config);
 
     if (status.reachable) {
+      assertReachableRuntimeIsWorkspaceManaged(status, config);
       return {
         result: {
           status: "already-running",
@@ -468,6 +470,20 @@ export function buildRuntimeSpawnScript(config: RuntimeWorkspaceConfig, targetDi
     `cd ${shellQuote(paths.cwd)}`,
     `exec env GOT_PORT=${shellQuote(config.port)} ${args.join(" ")} >> ${shellQuote(paths.logFile)} 2>&1`,
   ].join(" && ");
+}
+
+function assertReachableRuntimeIsWorkspaceManaged(
+  status: RuntimeStatusResult,
+  config: RuntimeWorkspaceConfig,
+): void {
+  if (status.managed) return;
+
+  throw new GotRuntimeRequestError(
+    [
+      `got runtime URL is already reachable but is not managed by this workspace: ${config.url}.`,
+      "Stop the other runtime or configure a different runtime URL before using got memory.",
+    ].join(" "),
+  );
 }
 
 export async function resolveDefaultRuntimeBin(): Promise<string> {

@@ -186,7 +186,7 @@ Pull and push automatically ensure the workspace singleton runtime before exchan
 Options:
   --with-agents              Create or update AGENTS.md with got memory-management instructions.
   --workspace-name <name>    Workspace name written to .got/memory/current.md.
-  --runtime-url <url>        got runtime URL. Defaults to http://127.0.0.1:3001.
+  --runtime-url <url>        got runtime URL. Init auto-selects a free localhost port when omitted.
   --runtime-cwd <path>       Runtime working directory. Defaults to .got/db.
   --runtime-bin <path>       db-runtime binary path. Defaults to the repo build when available.
   --persistent               Mark or start the runtime as persistent.

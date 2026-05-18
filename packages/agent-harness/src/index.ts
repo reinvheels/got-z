@@ -62,6 +62,10 @@ const templateRoot = joinPath(import.meta.dir, "..", "templates", "client-worksp
 const agentsStartMarker = "<!-- got-memory-management:start -->";
 const agentsEndMarker = "<!-- got-memory-management:end -->";
 const harnessShimPath = ".got/bin/got-agent-harness";
+const autoRuntimeHost = "127.0.0.1";
+const autoRuntimePortMin = 31000;
+const autoRuntimePortMax = 60999;
+const reservedAutoRuntimePorts = new Set<number>();
 
 const templateFiles = [
   {
@@ -87,7 +91,12 @@ export async function initAgentHarness(options: InitAgentHarnessOptions = {}): P
   const force = options.force ?? false;
   const dryRun = options.dryRun ?? false;
   const workspaceName = options.workspaceName ?? basename(targetDir);
-  const runtimeUrl = normalizeRuntimeUrl(options.runtimeUrl ?? defaultRuntimeUrl);
+
+  if (!(await directoryExists(targetDir))) {
+    throw new Error(`Target workspace does not exist: ${targetDir}`);
+  }
+
+  const runtimeUrl = await resolveInitRuntimeUrl(options.runtimeUrl);
   const runtimeCwd = options.runtimeCwd ?? defaultRuntimeCwd;
   const persistent = options.persistent ?? false;
   const runtimeConfig = await buildRuntimeWorkspaceConfig({
@@ -97,10 +106,6 @@ export async function initAgentHarness(options: InitAgentHarnessOptions = {}): P
     persistent,
   });
   const runtime = buildInitRuntime(runtimeConfig);
-
-  if (!(await directoryExists(targetDir))) {
-    throw new Error(`Target workspace does not exist: ${targetDir}`);
-  }
 
   const files: InitAgentHarnessFileResult[] = [];
 
@@ -150,6 +155,70 @@ export async function initAgentHarness(options: InitAgentHarnessOptions = {}): P
 async function directoryExists(path: string): Promise<boolean> {
   const result = await $`test -d ${path}`.quiet().nothrow();
   return result.exitCode === 0;
+}
+
+async function resolveInitRuntimeUrl(runtimeUrl?: string): Promise<string> {
+  if (runtimeUrl !== undefined) return normalizeRuntimeUrl(runtimeUrl);
+  const port = await chooseAutoRuntimePort();
+  return normalizeRuntimeUrl(`http://${autoRuntimeHost}:${port}`);
+}
+
+async function chooseAutoRuntimePort(): Promise<number> {
+  const osSelected = await probeRuntimePort(0);
+  if (osSelected.status === "available" && reserveAutoRuntimePort(osSelected.port)) {
+    return osSelected.port;
+  }
+
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const candidate = randomRuntimePort();
+    if (reservedAutoRuntimePorts.has(candidate)) continue;
+
+    const probed = await probeRuntimePort(candidate);
+    if (probed.status === "unavailable") continue;
+
+    reservedAutoRuntimePorts.add(candidate);
+    return candidate;
+  }
+
+  throw new Error("Unable to choose an auto runtime port");
+}
+
+async function probeRuntimePort(port: number): Promise<
+  | { readonly status: "available"; readonly port: number }
+  | { readonly status: "unavailable" | "unknown" }
+> {
+  try {
+    const listener = Bun.listen({
+      hostname: autoRuntimeHost,
+      port,
+      socket: {
+        data() {},
+      },
+    });
+    const selectedPort = listener.port;
+    listener.stop(true);
+    return { status: "available", port: selectedPort };
+  } catch (error) {
+    if (isListenPermissionError(error)) return { status: "unknown" };
+    return { status: "unavailable" };
+  }
+}
+
+function reserveAutoRuntimePort(port: number): boolean {
+  if (reservedAutoRuntimePorts.has(port)) return false;
+  reservedAutoRuntimePorts.add(port);
+  return true;
+}
+
+function randomRuntimePort(): number {
+  const range = autoRuntimePortMax - autoRuntimePortMin + 1;
+  return autoRuntimePortMin + Math.floor(Math.random() * range);
+}
+
+function isListenPermissionError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const message = error.message;
+  return message.includes("EPERM") || message.includes("EACCES") || message.includes("Failed to listen");
 }
 
 function buildInitRuntime(config: RuntimeWorkspaceConfig): InitAgentHarnessRuntime {

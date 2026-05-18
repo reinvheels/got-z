@@ -10,6 +10,7 @@ import {
   getRuntimePaths,
   getRuntimeStatus,
   loadRuntimeWorkspaceConfig,
+  startRuntime,
   writeRuntimeWorkspaceConfig,
 } from "./runtime";
 
@@ -178,4 +179,34 @@ test("runtime status clears stale managed pid metadata", async () => {
   expect(status.pidRunning).toBe(false);
   expect(await Bun.file(paths.pidFile).exists()).toBe(false);
   expect(await Bun.file(paths.stateFile).exists()).toBe(false);
+});
+
+test("runtime start rejects a reachable runtime from another workspace", async () => {
+  const workspace = `${(Bun.env.TMPDIR ?? "/tmp").replace(/\/+$/, "")}/got-agent-runtime-${crypto.randomUUID()}`;
+  await $`mkdir -p ${workspace}`;
+  tempDirs.push(workspace);
+
+  const config = await buildRuntimeWorkspaceConfig({
+    runtimeUrl: "http://127.0.0.1:3199",
+    runtimeBin: "/opt/got/bin/db-runtime",
+  });
+  await writeRuntimeWorkspaceConfig(workspace, config);
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async () => Response.json({ message: "Server running" })) as unknown as typeof fetch;
+
+  try {
+    await startRuntime(workspace);
+    throw new Error("expected external runtime reuse to fail");
+  } catch (error) {
+    expect(error).toBeInstanceOf(GotRuntimeRequestError);
+    expect((error as Error).message).toContain(
+      "got runtime URL is already reachable but is not managed by this workspace",
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  const paths = getRuntimePaths(workspace, config);
+  expect(await Bun.file(paths.pidFile).exists()).toBe(false);
 });

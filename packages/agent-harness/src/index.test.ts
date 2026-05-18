@@ -51,6 +51,7 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(skill).toContain("Runtime start: `./.got/bin/got-agent-harness runtime start` is for an explicit foreground debug run.");
   expect(skill).toContain("Read: `./.got/bin/got-agent-harness pull` ensures the runtime and wraps `POST /pull`");
   expect(skill).toContain("Write: `./.got/bin/got-agent-harness push` ensures the runtime and wraps `POST /push`");
+  expect(skill).toContain("new workspaces should use their own auto-selected localhost port");
   expect(skill).toContain("so concurrent chats do not start duplicate runtimes");
   expect(skill).toContain("stable node `got-memory`");
   expect(skill).toContain("Durable MVP memory should be written under that node");
@@ -75,6 +76,8 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(skill).toContain("Use the workspace-local harness CLI instead of direct `curl`");
   expect(skill).toContain("request the client's permission");
   expect(skill).toContain("Only report memory unavailable after the permitted retry fails");
+  expect(skill).toContain("reachable but not managed by this workspace");
+  expect(skill).toContain("It belongs to another workspace or unmanaged process.");
   expect(skill).toContain("Do not read runtime storage files as a memory source");
   expect(skill).toContain("Never parse the WAL or snapshot files to recover memory");
   expect(skill).toContain("`before_turn`");
@@ -96,9 +99,11 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(skill).toContain("`reflect`");
   expect(skill).toContain("`maintain`");
 
+  const runtimeConfig = await Bun.file(joinPath(workspace, ".got/runtime.json")).json();
   const current = await Bun.file(joinPath(workspace, ".got/memory/current.md")).text();
-  expect(current).toContain("- URL: http://127.0.0.1:3001");
-  expect(current).toContain("- Port: 3001");
+  expect(runtimeConfig.url).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
+  expect(current).toContain(`- URL: ${runtimeConfig.url}`);
+  expect(current).toContain(`- Port: ${runtimeConfig.port}`);
   expect(current).toContain("- Working directory: .got/db");
   expect(current).toContain("- Runtime ensure: `./.got/bin/got-agent-harness runtime ensure`.");
   expect(current).toContain("- Runtime status: `./.got/bin/got-agent-harness runtime status`.");
@@ -128,10 +133,32 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(agents).toContain("`pull` ensures the workspace singleton runtime");
   expect(agents).toContain("so concurrent chats do not start duplicate runtimes");
   expect(agents).toContain("If harness runtime commands fail in a sandboxed client");
+  expect(agents).toContain("the got runtime URL is reachable but not managed by this workspace");
   expect(agents).toContain("do not substitute Markdown memory");
   expect(agents).toContain("Do not read runtime storage files as memory");
   expect(agents).not.toContain("fallback");
   expect(agents).not.toContain("Fallback");
+});
+
+test("initAgentHarness chooses distinct auto runtime ports per workspace", async () => {
+  const firstWorkspace = await createTempWorkspace();
+  const secondWorkspace = await createTempWorkspace();
+
+  const first = await initAgentHarness({ targetDir: firstWorkspace });
+  const second = await initAgentHarness({ targetDir: secondWorkspace });
+
+  expect(first.runtime.url).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
+  expect(second.runtime.url).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
+  expect(first.runtime.url).not.toBe(second.runtime.url);
+  expect(first.runtime.port).not.toBe(second.runtime.port);
+  expect(await Bun.file(joinPath(firstWorkspace, ".got/runtime.json")).json()).toMatchObject({
+    url: first.runtime.url,
+    port: first.runtime.port,
+  });
+  expect(await Bun.file(joinPath(secondWorkspace, ".got/runtime.json")).json()).toMatchObject({
+    url: second.runtime.url,
+    port: second.runtime.port,
+  });
 });
 
 test("initAgentHarness renders runtime config and creates runtime cwd", async () => {

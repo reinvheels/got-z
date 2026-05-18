@@ -13,8 +13,10 @@ The got DB runtime is the only memory source. Agents must not answer memory ques
 - Read path: `./.got/bin/got-agent-harness pull` ensures the runtime, wraps `POST /pull` with raw got JSON, and defaults to the `got-memory` anchor projection when no body is provided.
 - Write path: `./.got/bin/got-agent-harness push` ensures the runtime and wraps `POST /push` with raw got JSON.
 - Persistence mode and working directory are configured outside this file.
+- Runtime URL is configured during init; new workspaces should use their own auto-selected localhost port unless explicitly overridden.
 - `runtime ensure` is the normal agent path. Use `runtime start --detach` only when explicitly debugging detached process behavior.
 - If harness runtime commands fail in a sandboxed client, request the available permission, escalation, or unsandboxed command path for `./.got/bin/got-agent-harness` and retry before declaring memory unavailable.
+- If the got runtime URL is reachable but not managed by this workspace, do not use that runtime. Stop the other runtime or choose a different runtime URL.
 - Do not read runtime storage internals such as `.got/db/got.wal`, snapshots, or checkpoints as a memory source.
 
 ## Memory Anchor

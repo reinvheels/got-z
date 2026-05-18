@@ -10,6 +10,8 @@ If harness runtime commands fail in a sandboxed client, request the available pe
 
 Use `./.got/bin/got-agent-harness runtime ensure` for an explicit runtime check/start. It uses workspace PID/state metadata and a runtime lock so concurrent chats do not start duplicate runtimes. Use `runtime start --detach` only when explicitly debugging detached process behavior.
 
+If the CLI reports that the got runtime URL is reachable but not managed by this workspace, do not use that runtime. Report the workspace/runtime conflict and ask the user to stop the other runtime or choose a different runtime URL.
+
 Do not read runtime storage files as memory. Files such as `.got/db/got.wal`, snapshots, checkpoints, or other DB runtime internals are implementation details.
 
 Because got pulls are explicit projections, write durable MVP memory under the stable `got-memory` node. Use `facts`, `user_preferences`, `workspace_context`, `procedures`, `decisions`, `open_questions`, `summaries`, and `last_updated` as the retrievable memory properties.

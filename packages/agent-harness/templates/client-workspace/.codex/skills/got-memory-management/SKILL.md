@@ -38,10 +38,13 @@ The MVP assumes the got DB runtime is a local HTTP service:
 - Write: `./.got/bin/got-agent-harness push` ensures the runtime and wraps `POST /push` with raw got JSON graph mutations.
 - Persistence: explicit runtime mode, configured outside this skill.
 - Data location: runtime working directory, configured outside this skill.
+- Runtime URL: configured during init; new workspaces should use their own auto-selected localhost port unless the user explicitly overrides it.
 
 `runtime ensure` is the normal agent path. It uses workspace PID/state metadata and a runtime lock so concurrent chats do not start duplicate runtimes. Use `runtime start --detach` only when explicitly debugging detached process behavior.
 
 Localhost access may be sandboxed in Codex-like clients. Use the workspace-local harness CLI instead of direct `curl`. If `runtime ensure`, `runtime status`, `pull`, or `push` fails with connection refused, operation not permitted, `EPERM`, `EACCES`, or a generic connection failure, do not conclude the runtime is down yet. First request the client's permission, escalation, or unsandboxed command path for `./.got/bin/got-agent-harness` and retry the same command. Only report memory unavailable after the permitted retry fails or the user declines.
+
+If the CLI says the got runtime URL is reachable but not managed by this workspace, do not use that runtime. It belongs to another workspace or unmanaged process. Report the workspace/runtime conflict and ask the user to stop the other runtime or choose a different runtime URL.
 
 Do not read runtime storage files as a memory source. Files such as `.got/db/got.wal`, snapshots, checkpoints, or other DB runtime internals are implementation details. Never parse the WAL or snapshot files to recover memory.
 
