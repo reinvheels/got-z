@@ -80,6 +80,13 @@ The loop needs practical guards: visited nodes, depth limits, token and query bu
 
 This recursive flow is what makes prose and triplets work together. Prose gives quick orientation and suggests new seeds. Triplets provide traversable structure for follow-up queries. The renderer should only put the activated subgraph into model context, not every retrieved neighbor.
 
+The harness should use the root got query primitives as two complementary thinking modes:
+
+- Sequential thinking through edge discovery: repeatedly ask got which relationships are available for activated frontier nodes, let the LLM or query planner score those edges against the current intent, expand promising paths, and issue follow-up queries until the path is weak, cyclic, sufficient, or out of budget.
+- Visual and analogical thinking through cluster discovery: ask got for a bounded subgraph around a seed, then render the activated cluster so the LLM can see patterns, evidence, tensions, and repeated solution shapes.
+
+Cluster discovery should follow the cluster vocabulary defined in the root `plan/VISION.md`: ego clusters, typed neighborhoods, evidence clusters, tension clusters, task clusters, temporal clusters, similar-shape clusters, and community clusters. The harness owns when to ask for each cluster type and how to render it into model context.
+
 ## got-LLM Translation Layer
 
 The harness needs a translation layer between LLM-friendly natural language and got-friendly graph JSON. Raw graph JSON should be treated as an intermediate representation, not as the final prompt format.
