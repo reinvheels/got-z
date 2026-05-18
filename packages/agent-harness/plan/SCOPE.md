@@ -2,39 +2,52 @@
 
 ## Active Increment
 
-@got/agent-harness/0003 - runtime CLI boundary. Completed; awaiting an explicitly started next increment.
+@got/agent-harness/0004 - structured memory contract.
 
 ## Goal
 
-Add the smallest package-owned runtime CLI boundary so future harness code can ensure a workspace-singleton got runtime, then pull and push memory through stable `got-agent-harness` commands instead of embedding `curl` details or requiring the runtime binary in `PATH`.
+Define the smallest practical memory contract for the `got-memory` anchor so agents store facts, preferences, procedures, decisions, questions, and summaries in predictable places instead of treating the anchor as an unstructured JSON bucket.
 
 ## In Scope
 
-- Add a Bun-native runtime client module for `GET /`, `POST /pull`, and `POST /push`.
-- Export CLI commands for `pull` and `push` using raw got JSON.
-- Export `runtime ensure`, `runtime start`, `runtime status`, and `runtime stop` commands.
-- Make `pull` and `push` ensure the workspace runtime before using the HTTP API.
-- Keep runtime process metadata in workspace-local files under `.got/`.
-- Protect workspace runtime startup with a lock path so concurrent chats do not launch duplicate runtimes.
-- Start ensured runtimes as detached host processes that survive the CLI invocation.
-- Keep raw got JSON as the request and response format.
-- Accept explicit runtime configuration from the initialized workspace state.
-- Support a configurable runtime binary path so client workspaces do not depend on `db-runtime` being in `PATH`.
-- Surface graceful errors from failed HTTP calls and non-OK responses.
-- Add focused tests for successful readiness, pull, push, failed runtime responses, and runtime process command behavior.
+- Define a minimal runtime-backed memory shape for the stable `got-memory` anchor.
+- Separate general facts from user preferences so observations like "Aepfel sind rot" are not stored as preferences.
+- Document the intended meaning of the initial top-level memory slots:
+  - `facts`
+  - `user_preferences`
+  - `workspace_context`
+  - `procedures`
+  - `decisions`
+  - `open_questions`
+  - `summaries`
+  - `last_updated`
+- Define minimum fields for individual memory entries where practical:
+  - `id`
+  - `type`
+  - `text`
+  - `scope`
+  - `source`
+  - `confidence`
+  - `last_verified`
+- Update the installed got memory skill and `AGENTS.got-memory.md` so agents classify memory writes into the contract before pushing.
+- Update the default pull query if the contract needs a different shape.
+- Add focused tests that installed templates teach the contract and keep facts/preferences distinct.
 
 ## Out Of Scope
 
-- Installing or building the got DB runtime.
-- Autonomous reasoning or background maintenance agents.
+- A full generated TypeScript schema or OpenAPI contract for harness memory.
+- Runtime-side validation in Zig.
 - Query planning.
 - Graph-to-natural-language rendering.
 - LLM-to-graph translation.
-- Context block template systems.
-- Fulltext, vector search, or hybrid retrieval.
-- Global Codex app context control or native compaction control.
+- Embedding, fulltext, or hybrid retrieval.
+- Autonomous maintenance loops.
+- Human review workflows.
+- Migration of existing ad hoc memory stored in test workspaces.
 
 ## Verification
 
+- `bunx tsc --noEmit -p packages/agent-harness/tsconfig.json`
 - `bun run --filter='@got/agent-harness' test`
 - `bun run --filter='@got/agent-harness' build`
+- Manual tmp-workspace check that a fact and a preference are written to different slots.
