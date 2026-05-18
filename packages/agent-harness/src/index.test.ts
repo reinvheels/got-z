@@ -49,6 +49,10 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(skill).toContain("Readiness check: `GET /`.");
   expect(skill).toContain("Read: `POST /pull` with raw got JSON projection requests.");
   expect(skill).toContain("Write: `POST /push` with raw got JSON graph mutations.");
+  expect(skill).toContain("treat this skill as active by default");
+  expect(skill).toContain("The user should not have to mention got memory management in every prompt");
+  expect(skill).toContain("Run routine memory lifecycle work quietly");
+  expect(skill).toContain("Do not announce every lifecycle hook");
   expect(skill).toContain("Localhost access may be sandboxed");
   expect(skill).toContain("request the client's permission");
   expect(skill).toContain("Only fall back to markdown after the permitted retry fails");
@@ -84,6 +88,9 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(current).toContain("`last_verified`");
 
   const agents = await Bun.file(joinPath(workspace, "AGENTS.got-memory.md")).text();
+  expect(agents).toContain("got memory management is active in this workspace by default");
+  expect(agents).toContain("The user does not need to mention it in each prompt");
+  expect(agents).toContain("Run routine memory lifecycle work quietly");
   expect(agents).toContain("If localhost runtime checks fail in a sandboxed client");
   expect(agents).toContain("Treat markdown fallback as the last step");
 });

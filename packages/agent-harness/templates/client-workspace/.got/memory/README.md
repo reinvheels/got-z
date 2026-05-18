@@ -6,6 +6,8 @@ The primary memory backend should be the got DB runtime. These markdown files ke
 
 got memory management should query the got DB runtime continuously during the agent lifecycle: before turns, before actions, after actions, after commits, and before thread switches. Markdown mirrors only the compact state needed for recovery.
 
+Agents should run routine memory lifecycle work quietly. Do not announce every lifecycle hook, runtime check, query, or write draft unless the user asked about memory behavior, approval is needed, an operation fails, or retrieved memory materially changes the answer.
+
 ## MVP Runtime Contract
 
 - Runtime readiness check: `GET /`.

@@ -7,6 +7,12 @@ description: Use when working in a workspace that has got memory management inst
 
 got memory management is the workspace-level lifecycle layer for keeping agent context compact and recoverable. It is not the got runtime, but it should use the got DB runtime as the primary memory backend whenever one is configured. Local markdown state files are bootstrap, fallback, and human-readable checkpoints.
 
+## Activation And User Communication
+
+When got memory management is installed through workspace `AGENTS.md`, treat this skill as active by default. The user should not have to mention got memory management in every prompt.
+
+Run routine memory lifecycle work quietly. Do not announce every lifecycle hook, file read, runtime check, got query, got write draft, or sandbox retry. User-facing updates should focus on the user's task. Mention got memory management only when runtime access needs approval, a memory read/write fails, a durable memory write is the requested outcome, or retrieved memory materially changes the answer.
+
 ## Required Workflow
 
 When this skill is active:

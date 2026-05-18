@@ -1,12 +1,14 @@
 ## got Memory Management
 
-Use got memory management in this workspace.
+got memory management is active in this workspace by default. The user does not need to mention it in each prompt.
 
 The got DB runtime is the primary memory backend. Markdown files under `.got/memory/` are bootstrap, fallback, and human-readable checkpoint material.
 
 Before substantive work, read `.got/memory/current.md` to find workspace identity, runtime configuration, and fallback state, then query the got DB runtime for relevant workspace, user, task, decision, procedure, artifact, question, summary, and recent activity context. For architecture, planning, or handoff work, also read `.got/memory/open-questions.md` and `.got/memory/checkpoints.md`.
 
 If localhost runtime checks fail in a sandboxed client, request the available permission, escalation, or unsandboxed command path for localhost and retry before declaring the runtime unavailable. Treat markdown fallback as the last step, not the first failure path.
+
+Run routine memory lifecycle work quietly. Do not announce every lifecycle hook, file read, runtime check, got query, got write draft, or sandbox retry. Mention got memory management only when runtime access needs approval, a memory read/write fails, a durable memory write is the requested outcome, or retrieved memory materially changes the answer.
 
 Query the got DB runtime at deterministic lifecycle boundaries:
 
