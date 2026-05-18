@@ -69,9 +69,9 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(skill).toContain("`maintain`");
 
   const current = await Bun.file(joinPath(workspace, ".got/memory/current.md")).text();
-  expect(current).toContain("- URL: not configured.");
-  expect(current).toContain("- Port: not configured.");
-  expect(current).toContain("- Working directory: not configured.");
+  expect(current).toContain("- URL: http://127.0.0.1:3001");
+  expect(current).toContain("- Port: 3001");
+  expect(current).toContain("- Working directory: .got/db");
   expect(current).toContain("- Readiness check: `GET /`.");
   expect(current).toContain("- Exchange format: raw got JSON.");
   expect(current).toContain("## Memory Metadata Defaults");
@@ -79,6 +79,87 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(current).toContain("`scope`");
   expect(current).toContain("`recency`");
   expect(current).toContain("`last_verified`");
+});
+
+test("initAgentHarness renders runtime config and creates runtime cwd", async () => {
+  const workspace = await createTempWorkspace();
+
+  const result = await initAgentHarness({
+    targetDir: workspace,
+    workspaceName: "memory lab",
+    runtimeUrl: "http://127.0.0.1:3199",
+    runtimeCwd: ".got/runtime-data",
+    persistent: true,
+  });
+
+  const current = await Bun.file(joinPath(workspace, ".got/memory/current.md")).text();
+  expect(current).toContain("- Workspace: memory lab.");
+  expect(current).toContain("- URL: http://127.0.0.1:3199");
+  expect(current).toContain("- Port: 3199");
+  expect(current).toContain("- Working directory: .got/runtime-data");
+  expect(current).toContain("- Persistence: enabled (--persistent expected).");
+  expect(current).toContain("`(cd .got/runtime-data && GOT_PORT=3199 db-runtime --port 3199 --persistent)`");
+  expect(await directoryExists(joinPath(workspace, ".got/runtime-data"))).toBe(true);
+  expect(result.runtime.command).toBe(
+    "(cd .got/runtime-data && GOT_PORT=3199 db-runtime --port 3199 --persistent)",
+  );
+});
+
+test("initAgentHarness can wire AGENTS.md idempotently", async () => {
+  const workspace = await createTempWorkspace();
+
+  const first = await initAgentHarness({ targetDir: workspace, withAgents: true });
+  expect(first.files.some((file) => relativePath(workspace, file.target) === "AGENTS.md" && file.action === "copied")).toBe(
+    true,
+  );
+
+  const agentsPath = joinPath(workspace, "AGENTS.md");
+  const agents = await Bun.file(agentsPath).text();
+  expect(agents).toContain("<!-- got-memory-management:start -->");
+  expect(agents).toContain("The got DB runtime is the primary memory backend.");
+  expect(agents).toContain("<!-- got-memory-management:end -->");
+
+  const second = await initAgentHarness({ targetDir: workspace, withAgents: true });
+  expect(second.files.some((file) => relativePath(workspace, file.target) === "AGENTS.md" && file.action === "skipped")).toBe(
+    true,
+  );
+
+  const updated = await Bun.file(agentsPath).text();
+  expect(countOccurrences(updated, "<!-- got-memory-management:start -->")).toBe(1);
+});
+
+test("initAgentHarness appends AGENTS.md include to existing notes", async () => {
+  const workspace = await createTempWorkspace();
+  const agentsPath = joinPath(workspace, "AGENTS.md");
+  await Bun.write(agentsPath, "# Project Notes\n\nKeep this intro.\n");
+
+  const result = await initAgentHarness({ targetDir: workspace, withAgents: true });
+
+  expect(result.files.some((file) => relativePath(workspace, file.target) === "AGENTS.md" && file.action === "updated")).toBe(
+    true,
+  );
+  const agents = await Bun.file(agentsPath).text();
+  expect(agents).toContain("Keep this intro.");
+  expect(agents).toContain("<!-- got-memory-management:start -->");
+});
+
+test("initAgentHarness dry run reports bootstrap actions without writing", async () => {
+  const workspace = await createTempWorkspace();
+
+  const result = await initAgentHarness({
+    targetDir: workspace,
+    withAgents: true,
+    runtimeUrl: "http://127.0.0.1:3199",
+    runtimeCwd: ".got/db",
+    persistent: true,
+    dryRun: true,
+  });
+
+  expect(result.files.every((file) => file.action.startsWith("would-"))).toBe(true);
+  expect(await Bun.file(joinPath(workspace, "AGENTS.md")).exists()).toBe(false);
+  expect(await Bun.file(joinPath(workspace, ".got/memory/current.md")).exists()).toBe(false);
+  expect(await directoryExists(joinPath(workspace, ".got/db"))).toBe(false);
+  expect(result.runtime.command).toBe("(cd .got/db && GOT_PORT=3199 db-runtime --port 3199 --persistent)");
 });
 
 test("initAgentHarness skips existing files unless force is enabled", async () => {
@@ -108,4 +189,13 @@ function relativePath(root: string, path: string): string {
   const normalizedRoot = root.replaceAll(/\/+/g, "/").replace(/\/+$/, "");
   const normalizedPath = path.replaceAll(/\/+/g, "/");
   return normalizedPath.slice(normalizedRoot.length + 1);
+}
+
+async function directoryExists(path: string): Promise<boolean> {
+  const result = await $`test -d ${path}`.quiet().nothrow();
+  return result.exitCode === 0;
+}
+
+function countOccurrences(value: string, search: string): number {
+  return value.split(search).length - 1;
 }
