@@ -69,7 +69,7 @@ Copies got memory management skill and markdown templates into a client workspac
 Existing files are skipped unless --force is passed.`);
 }
 
-function printResult(result: ReturnType<typeof initAgentHarness>): void {
+function printResult(result: Awaited<ReturnType<typeof initAgentHarness>>): void {
   console.log(`Initialized got agent harness templates in ${result.targetDir}`);
 
   for (const file of result.files) {
@@ -89,7 +89,7 @@ try {
     throw new Error(`Unknown command: ${options.command}`);
   }
 
-  const result = initAgentHarness({
+  const result = await initAgentHarness({
     targetDir: options.targetDir,
     force: options.force,
     dryRun: options.dryRun,

@@ -1,5 +1,4 @@
-import { existsSync, mkdirSync, copyFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { $ } from "bun";
 
 export type InitAgentHarnessOptions = {
   readonly targetDir?: string;
@@ -18,7 +17,7 @@ export type InitAgentHarnessResult = {
   readonly files: readonly InitAgentHarnessFileResult[];
 };
 
-const templateRoot = resolve(import.meta.dir, "..", "templates", "client-workspace");
+const templateRoot = joinPath(import.meta.dir, "..", "templates", "client-workspace");
 
 const templateFiles = [
   {
@@ -47,36 +46,76 @@ const templateFiles = [
   },
 ] as const;
 
-export function initAgentHarness(options: InitAgentHarnessOptions = {}): InitAgentHarnessResult {
-  const targetDir = resolve(options.targetDir ?? process.cwd());
+export async function initAgentHarness(options: InitAgentHarnessOptions = {}): Promise<InitAgentHarnessResult> {
+  const targetDir = resolvePath(options.targetDir ?? process.cwd());
   const force = options.force ?? false;
   const dryRun = options.dryRun ?? false;
 
-  if (!existsSync(targetDir)) {
+  if (!(await directoryExists(targetDir))) {
     throw new Error(`Target workspace does not exist: ${targetDir}`);
   }
 
-  const files = templateFiles.map((file): InitAgentHarnessFileResult => {
-    const source = join(templateRoot, file.source);
-    const target = join(targetDir, file.target);
-    const exists = existsSync(target);
+  const files: InitAgentHarnessFileResult[] = [];
+
+  for (const file of templateFiles) {
+    const source = joinPath(templateRoot, file.source);
+    const target = joinPath(targetDir, file.target);
+    const exists = await Bun.file(target).exists();
 
     if (dryRun) {
-      return {
+      files.push({
         source,
         target,
         action: exists && !force ? "would-skip" : "would-copy",
-      };
+      });
+      continue;
     }
 
     if (exists && !force) {
-      return { source, target, action: "skipped" };
+      files.push({ source, target, action: "skipped" });
+      continue;
     }
 
-    mkdirSync(dirname(target), { recursive: true });
-    copyFileSync(source, target);
-    return { source, target, action: "copied" };
-  });
+    await Bun.write(target, Bun.file(source));
+    files.push({ source, target, action: "copied" });
+  }
 
   return { targetDir, files };
+}
+
+async function directoryExists(path: string): Promise<boolean> {
+  const result = await $`test -d ${path}`.quiet().nothrow();
+  return result.exitCode === 0;
+}
+
+function resolvePath(path: string): string {
+  if (path.startsWith("/")) return stripTrailingSlash(path);
+  return joinPath(process.cwd(), path);
+}
+
+function joinPath(...parts: readonly string[]): string {
+  const path = parts
+    .filter((part) => part.length > 0)
+    .join("/")
+    .replaceAll(/\/+/g, "/")
+    .replaceAll("/./", "/");
+
+  const segments: string[] = [];
+  const absolute = path.startsWith("/");
+
+  for (const segment of path.split("/")) {
+    if (segment.length === 0 || segment === ".") continue;
+    if (segment === "..") {
+      segments.pop();
+      continue;
+    }
+    segments.push(segment);
+  }
+
+  return `${absolute ? "/" : ""}${segments.join("/")}`;
+}
+
+function stripTrailingSlash(path: string): string {
+  if (path === "/") return path;
+  return path.replace(/\/+$/, "");
 }
