@@ -14,6 +14,7 @@ The MVP should make got usable as a local, durable graph storage service for an 
 - Contract source of truth: `packages/api-spec` describes endpoints, graph key grammar, examples, runtime modes, limitations, and conformance cases.
 - Generated artifacts: API Markdown, machine-readable contract JSON, and conformance fixtures are generated from `packages/api-spec`.
 - API tests: integration tests start the built runtime on free ports and cover core API behavior, persistence, errors, and performance thresholds.
+- Agent harness package: `packages/agent-harness` provides an init command that copies got memory management skills and markdown state templates into client workspaces.
 - Documentation: hand-written docs explain architecture, roadmap, decisions, setup, and runtime behavior without duplicating generated API examples.
 
 ## Harness-Facing Requirements

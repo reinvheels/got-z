@@ -7,6 +7,7 @@ got is organized as a Bun monorepo with a Zig database runtime.
 - `packages/db-runtime`: HTTP runtime and in-memory graph store, written in Zig.
 - `packages/api-spec`: future source of truth for the API contract, grammar, examples, and generated artifacts.
 - `packages/api-tests`: Bun integration, conformance, persistence, and performance tests against the built runtime.
+- `packages/agent-harness`: utilities and templates for installing got memory management into client workspaces.
 - `packages/util`: shared TypeScript helpers used by tests and spec code.
 
 ## Runtime Shape
@@ -18,3 +19,7 @@ Storage is behind `storage.Engine`. The default mode is ephemeral. Persistent mo
 ## Documentation Shape
 
 High-level intent lives in hand-written Markdown. Concrete API details should live in the TypeScript API contract and be generated into Markdown, JSON contract artifacts, and conformance tests.
+
+## Harness Shape
+
+Harness behavior stays outside the DB runtime. The `agent-harness` package owns workspace templates such as got memory management skills and markdown state files. Its init command copies those templates into client workspaces so future harness workflows can be standardized without coupling them to runtime storage code.

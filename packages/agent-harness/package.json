@@ -1,0 +1,21 @@
+{
+  "name": "@got/agent-harness",
+  "version": "0.1.0",
+  "description": "Agent harness utilities and templates for got memory management",
+  "main": "src/index.ts",
+  "type": "module",
+  "bin": {
+    "got-agent-harness": "src/cli.ts"
+  },
+  "scripts": {
+    "init": "bun src/cli.ts init",
+    "test": "bun test",
+    "build": "bun build src/index.ts src/cli.ts --outdir=dist --target=bun",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "latest"
+  },
+  "dependencies": {}
+}

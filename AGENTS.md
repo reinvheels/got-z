@@ -4,11 +4,12 @@
 
 got is a Bun workspace for a graph data API backed by a Zig database runtime.
 
-The repo is split into four workspace packages:
+The repo is split into five workspace packages:
 
 - `packages/db-runtime`: Zig HTTP runtime on port `3001`; implements `/push` and `/pull`.
 - `packages/api-spec`: TypeScript API schema/types.
 - `packages/api-tests`: Bun integration and performance tests that start the DB runtime on free localhost ports.
+- `packages/agent-harness`: Bun utilities and templates for got memory management in client workspaces.
 - `packages/util`: Shared TypeScript helpers and prototype extensions used by tests/spec code.
 
 High-level documentation lives under `docs/`. Sample request/response fixtures live under `test/`.
@@ -156,6 +157,7 @@ Use `docs/decisions/` by default for durable design decisions. Add or update a d
 - `packages/db-runtime/src/storage.zig` defines the storage-engine interface: load existing state, append accepted `/push` mutations, checkpoint the current graph, and deinit.
 - `packages/db-runtime/src/snapshot.zig` defines the snapshot serialization sink. Snapshot writers receive logical node and edge records instead of raw memory, so JSON, binary, and future offset-based engines can share the same graph traversal.
 - `packages/db-runtime/src/util/json.zig` wraps `std.json.ObjectMap`; this code follows the Zig 0.17 API where maps use `.empty` plus allocator-explicit `put`/`deinit`.
+- `packages/agent-harness` owns client-workspace got memory management templates. Keep harness workflow artifacts there rather than in the runtime package.
 - `httpz` has been removed from the DB runtime; keep new runtime work aligned with stdlib `std.Io`/`Io.net` unless there is a deliberate dependency decision.
 
 The default storage backend is `storage.NoopEngine`; pass `-p` or `--persistent` to use `storage.JsonWalEngine`. The WAL engine queues accepted `/push` bodies, writes length-framed raw JSON records to `got.wal` from a background thread, syncs once per drained batch, and replays that WAL during startup. Keep persistence work behind the `storage.Engine` and `snapshot.SnapshotSink` interfaces so the conservative WAL/snapshot path can later swap JSON, binary, or custom-layout implementations without changing HTTP routing or graph mutation logic.
