@@ -14,6 +14,5 @@ This directory contains high-level documentation only. Concrete API grammar, req
 ## Documentation Layout
 
 - `architecture.md`: system shape and package responsibilities.
-- `roadmap.md`: near-term and future work.
 - `decisions/`: durable design decisions, including the decision record schema.
 - `api/`: reserved for generated API documentation.

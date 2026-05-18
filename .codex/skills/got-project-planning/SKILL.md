@@ -29,7 +29,7 @@ This skill is local to this workspace. The same structure can later be copied in
 
 `VISION.md` is stable. Update it only when the long-term direction, boundaries, vocabulary, or product thesis changes.
 
-`SCOPE.md` is active. It should describe one small increment, not the whole roadmap. It may mirror `VISION.md` headings as MVP subsets when that helps keep scope aligned.
+`SCOPE.md` is active. It should describe one small increment, not the whole long-term plan. It may mirror `VISION.md` headings as MVP subsets when that helps keep scope aligned.
 
 `increments/` is history. Do not rewrite completed increment records except for factual corrections.
 
@@ -62,14 +62,16 @@ Completed.
 
 - Commands, checks, or review performed.
 
-## Commits
-
-- Commit hashes and messages when available.
-
 ## Follow-Up
 
 - What remains for later increments.
 ```
+
+## Commit Message Convention
+
+Commit messages should reference the increment id when a change belongs to a planned increment. Use `root/NNNN` for repository-level planning and the package name plus increment number for package-level planning, for example `root/0002: migrate planning artifacts` or `@got/agent-harness/0001: add init templates`.
+
+Do not track commit hashes inside increment records. Git history should point to increments, not the other way around.
 
 ## Minimum Scaffolds
 
@@ -97,5 +99,5 @@ Create `increments/` as an empty directory.
 
 - Do not store raw chat logs in planning artifacts.
 - Do not expand scope beyond the vision.
-- Do not put future roadmap history into `SCOPE.md`; use `increments/` for completed history and `VISION.md` for long-term direction.
-- After a small planning update is accepted, suggest committing it as its own changeset.
+- Do not put future backlog history into `SCOPE.md`; use `increments/` for completed history and `VISION.md` for long-term direction.
+- After a small planning update is accepted, suggest committing it as its own changeset using the relevant increment id when one exists.

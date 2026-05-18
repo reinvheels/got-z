@@ -143,9 +143,13 @@ The harness should leave no runtime listening after tests finish.
 
 Prefer small, focused changesets with clear commit messages. After a small coherent step is implemented, tested, and the user is satisfied with the direction, proactively suggest committing before moving on to the next step. Keep unrelated edits out of the same commit unless they are necessary for the change to work.
 
+When a change belongs to a planned increment, reference the increment id in the commit message. Use `root/NNNN` for repository-level planning and the package name plus increment number for package-level planning, for example `root/0002: migrate planning artifacts` or `@got/agent-harness/0001: add init templates`. Do not track commit hashes inside increment records; Git history should point to increments, not the other way around.
+
 ## Documentation Flow
 
-Keep hand-written Markdown high-level: vision, architecture, roadmap, and design decisions. Do not manually maintain concrete API examples in Markdown. The API contract in `packages/api-spec` should become the source of truth for generated API docs, machine-readable contract output, and conformance examples.
+Keep hand-written Markdown high-level: vision, architecture, project planning, and design decisions. Do not manually maintain concrete API examples in Markdown. The API contract in `packages/api-spec` should become the source of truth for generated API docs, machine-readable contract output, and conformance examples.
+
+Global project planning lives at the repository root in `VISION.md`, `SCOPE.md`, and `increments/`. `VISION.md` is long-term direction and boundaries, `SCOPE.md` is the active minimal increment, and `increments/` is completed or archived history. Package-specific planning may use the same structure inside the package root when the work is owned by one package. Do not add a second planning file under `docs/`; root planning artifacts are canonical.
 
 Use `docs/decisions/` by default for durable design decisions. Add or update a decision whenever work establishes an architectural direction, source-of-truth rule, storage semantic, API grammar rule, or workflow convention that future agents should not have to rediscover from chat history. Keep each decision small, numbered, and structured with Status, Decision, Context, and Consequences. Follow the decision status schema in `docs/decisions/README.md`; use `Accepted / Deferred` for decisions whose direction is settled but whose implementation is intentionally on hold.
 
