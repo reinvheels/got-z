@@ -308,7 +308,7 @@ function runtimeOverrides(options: CliOptions): RuntimeConfigInput {
 async function readRequestBody(options: CliOptions): Promise<unknown> {
   if (options.body !== undefined) return parseJsonBody(options.body);
   if (options.file !== undefined) return parseJsonBody(await Bun.file(options.file).text());
-  if (Bun.stdin.isTTY) return {};
+  if (process.stdin.isTTY) return {};
 
   const text = await new Response(Bun.stdin.stream()).text();
   return text.trim().length === 0 ? {} : parseJsonBody(text);
