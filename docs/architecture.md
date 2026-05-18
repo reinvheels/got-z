@@ -16,6 +16,17 @@ The runtime exposes a compact HTTP API for pushing graph mutations and pulling p
 
 Storage is behind `storage.Engine`. The default mode is ephemeral. Persistent mode is enabled explicitly and currently uses an asynchronous batched WAL writer.
 
+For the first agent harness increment, the runtime contract is intentionally small:
+
+- A built `db-runtime` binary can run as a local HTTP service on a caller-selected port.
+- `GET /` is the MVP readiness check.
+- `POST /push` accepts raw JSON graph mutations for node properties, outgoing edges, connected node properties, and edge properties.
+- `POST /pull` returns deterministic raw JSON projections for requested node keys and projection shapes.
+- Persistence is explicit through `-p` or `--persistent`; persistent data is written relative to the runtime working directory.
+- Invalid content type, invalid JSON, unsupported method, oversized body, and non-object request bodies fail with JSON responses.
+
+The MVP does not include a separate `/health` endpoint, a `--data-dir` flag, a runtime client package, or Zig-side graph-shape validation.
+
 ## Documentation Shape
 
 High-level intent lives in hand-written Markdown. Concrete API details should live in the TypeScript API contract and be generated into Markdown, JSON contract artifacts, and conformance tests.
