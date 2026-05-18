@@ -25,7 +25,7 @@ This skill is local to this workspace. The same structure can later be copied in
 4. Discuss changes with the user before broadening vision or scope.
 5. Keep `plan/SCOPE.md` to the smallest active increment.
 6. Ensure every scope item maps to `plan/VISION.md`. If it does not, update `plan/VISION.md` first in dialogue with the user.
-7. When an increment is implemented, create a `plan/increments/NNNN-slug.md` record and then rewrite `plan/SCOPE.md` for the next increment.
+7. Keep working inside the current `plan/SCOPE.md` until the user explicitly starts a new increment.
 
 ## Artifact Rules
 
@@ -33,7 +33,11 @@ This skill is local to this workspace. The same structure can later be copied in
 
 `plan/SCOPE.md` is active. It should describe one small increment, not the whole long-term plan. It may mirror `plan/VISION.md` headings as MVP subsets when that helps keep scope aligned.
 
+`plan/SCOPE.md` must not be advanced automatically. A new increment starts only when the user explicitly asks to start, plan, or switch to a new increment. Finishing work, creating a commit, creating a completed increment record, or seeing a natural next step is not enough permission to rewrite `plan/SCOPE.md` for the next increment.
+
 `plan/increments/` is history. Do not rewrite completed increment records except for factual corrections.
+
+When the current increment is complete, create a `plan/increments/NNNN-slug.md` record only when the user accepts closing or archiving that increment. After archiving, leave `plan/SCOPE.md` on the current increment unless the user also explicitly starts the next increment.
 
 ## Increment Record Format
 
@@ -73,6 +77,8 @@ Completed.
 
 Commit messages should reference the increment id when a change belongs to a planned increment. Use `root/NNNN` for repository-level planning and the package name plus increment number for package-level planning, for example `root/0002: migrate planning artifacts` or `@got/agent-harness/0001: add init templates`.
 
+Use `noinc:` when a commit intentionally does not belong to any project increment, for example `noinc: update planning workflow rules`.
+
 Do not track commit hashes inside increment records. Git history should point to increments, not the other way around.
 
 ## Minimum Scaffolds
@@ -104,4 +110,5 @@ Create `plan/increments/` as an empty directory.
 - Do not store raw chat logs in planning artifacts.
 - Do not expand scope beyond the vision.
 - Do not put future backlog history into `plan/SCOPE.md`; use `plan/increments/` for completed history and `plan/VISION.md` for long-term direction.
+- Do not infer or start the next increment from completed work. Keep the current increment running until the user explicitly starts another one.
 - After a small planning update is accepted, suggest committing it as its own changeset using the relevant increment id when one exists.

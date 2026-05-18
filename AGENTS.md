@@ -143,7 +143,7 @@ The harness should leave no runtime listening after tests finish.
 
 Prefer small, focused changesets with clear commit messages. After a small coherent step is implemented, tested, and the user is satisfied with the direction, proactively suggest committing before moving on to the next step. Keep unrelated edits out of the same commit unless they are necessary for the change to work.
 
-When a change belongs to a planned increment, reference the increment id in the commit message. Use `root/NNNN` for repository-level planning and the package name plus increment number for package-level planning, for example `root/0002: migrate planning artifacts` or `@got/agent-harness/0001: add init templates`. Do not track commit hashes inside increment records; Git history should point to increments, not the other way around.
+When a change belongs to a planned increment, reference the increment id in the commit message. Use `root/NNNN` for repository-level planning and the package name plus increment number for package-level planning, for example `root/0002: migrate planning artifacts` or `@got/agent-harness/0001: add init templates`. Use `noinc:` for commits that intentionally do not belong to any project increment, for example `noinc: update planning workflow rules`. Do not track commit hashes inside increment records; Git history should point to increments, not the other way around.
 
 ## Documentation Flow
 
