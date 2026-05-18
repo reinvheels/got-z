@@ -56,6 +56,8 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(skill).toContain("Localhost access may be sandboxed");
   expect(skill).toContain("request the client's permission");
   expect(skill).toContain("Only fall back to markdown after the permitted retry fails");
+  expect(skill).toContain("Do not read runtime storage files as a memory source");
+  expect(skill).toContain("Never parse the WAL or snapshot files to recover memory");
   expect(skill).toContain("`before_turn`");
   expect(skill).toContain("`before_action`");
   expect(skill).toContain("`after_action`");
@@ -93,6 +95,8 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(agents).toContain("Run routine memory lifecycle work quietly");
   expect(agents).toContain("If localhost runtime checks fail in a sandboxed client");
   expect(agents).toContain("Treat markdown fallback as the last step");
+  expect(agents).toContain("Do not read runtime storage files as memory");
+  expect(agents).toContain("If `/pull` returns no relevant memory");
 });
 
 test("initAgentHarness renders runtime config and creates runtime cwd", async () => {

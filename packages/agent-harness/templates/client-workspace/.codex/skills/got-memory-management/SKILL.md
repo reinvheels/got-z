@@ -42,6 +42,8 @@ Localhost access may be sandboxed in Codex-like clients. If `GET /`, `/pull`, or
 
 If the runtime is still unavailable after that retry, continue from markdown fallback state and record that got-backed memory was not refreshed.
 
+Do not read runtime storage files as a memory source. Files such as `.got/db/got.wal`, snapshots, checkpoints, or other DB runtime internals are implementation details. If `/pull` returns no relevant memory, report that the public got API did not return memory and use only the markdown fallback files. Never parse the WAL or snapshot files to recover memory.
+
 ## Memory Object Vocabulary
 
 Use this minimal vocabulary when drafting memory writes:

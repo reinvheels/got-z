@@ -16,6 +16,7 @@ Agents should run routine memory lifecycle work quietly. Do not announce every l
 - Persistence mode and working directory are configured outside these markdown files.
 - If localhost runtime checks fail in a sandboxed client, request the available permission, escalation, or unsandboxed command path for localhost and retry before declaring the runtime unavailable.
 - If the runtime is still unavailable after that retry, use these markdown files as fallback and record that memory was not refreshed.
+- Do not read runtime storage internals such as `.got/db/got.wal`, snapshots, or checkpoints as a memory source. Only the got HTTP API and these markdown fallback files are valid memory sources for the harness.
 
 ## Lifecycle Hooks
 

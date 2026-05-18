@@ -8,6 +8,8 @@ Before substantive work, read `.got/memory/current.md` to find workspace identit
 
 If localhost runtime checks fail in a sandboxed client, request the available permission, escalation, or unsandboxed command path for localhost and retry before declaring the runtime unavailable. Treat markdown fallback as the last step, not the first failure path.
 
+Do not read runtime storage files as memory. Files such as `.got/db/got.wal`, snapshots, checkpoints, or other DB runtime internals are implementation details. If `/pull` returns no relevant memory, report that the public got API did not return memory and use only the markdown fallback files.
+
 Run routine memory lifecycle work quietly. Do not announce every lifecycle hook, file read, runtime check, got query, got write draft, or sandbox retry. Mention got memory management only when runtime access needs approval, a memory read/write fails, a durable memory write is the requested outcome, or retrieved memory materially changes the answer.
 
 Query the got DB runtime at deterministic lifecycle boundaries:
