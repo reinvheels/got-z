@@ -49,6 +49,37 @@ The harness should not run one generic "search memory" step. It should run small
 
 Memories should be reactivated by context throughout the turn, not only loaded once at the beginning.
 
+## Recursive Retrieval Flow
+
+Memory retrieval should behave like an organic activation process, not like a single database lookup. The harness should start from seed context, retrieve nearby memory, score what it found, expand promising paths, and repeat that loop until it has enough useful context or reaches a budget.
+
+```txt
+frontier = seeds from user prompt, workspace, active task, and recent action
+
+while budget remains:
+  results = retrieve(frontier)
+  scored = score(results, current intent)
+  activated += strongest relevant memories
+  frontier = expand(activated, unexplored edges, prose hints, and missing evidence)
+  stop when the frontier is weak, redundant, cyclic, or sufficient
+
+render activated memory into compact working context
+```
+
+Each retrieval wave should be small. Scoring should consider task fit, scope, salience, confidence, recency, frequency, source quality, graph distance, and whether a memory explains or constrains the current action.
+
+Expansion should be selective. The harness should follow high-value edges such as `>implemented_by`, `>verified_by`, `>constrained_by`, `>caused_by`, `>supersedes`, `>contradicts`, `>requires`, and `>related_to`. It should also inspect prose properties such as `summary` or `notes_md` when they contain hints that deserve another graph query.
+
+The loop needs practical guards: visited nodes, depth limits, token and query budgets, score thresholds, duplicate suppression, and stop conditions for "enough context." Different retrieval modes can use different expansion patterns:
+
+- Focused expansion: stay close to the active task and high-confidence memories.
+- Context expansion: scan broader but shallow neighboring concepts.
+- Old-memory expansion: look through older or less frequently used memory in separate recency bands.
+- Conflict expansion: search for contradictions, superseded decisions, and disputed facts before acting.
+- Evidence expansion: find files, tests, commands, commits, or observations that support a claim.
+
+This recursive flow is what makes prose and triplets work together. Prose gives quick orientation and suggests new seeds. Triplets provide traversable structure for follow-up queries. The renderer should only put the activated subgraph into model context, not every retrieved neighbor.
+
 ## got-LLM Translation Layer
 
 The harness needs a translation layer between LLM-friendly natural language and got-friendly graph JSON. Raw graph JSON should be treated as an intermediate representation, not as the final prompt format.
