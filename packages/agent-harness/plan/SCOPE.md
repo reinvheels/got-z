@@ -2,7 +2,7 @@
 
 ## Active Increment
 
-@got/agent-harness/0004 - structured memory contract.
+@got/agent-harness/0004 - structured memory contract. Completed; awaiting an explicitly started next increment.
 
 ## Goal
 

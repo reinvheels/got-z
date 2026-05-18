@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned.
+Completed.
 
 ## Goal
 
@@ -61,15 +61,27 @@ The next increment should keep the working runtime path and add just enough stru
 - Package tests cover the contract text and slot distinction.
 - Typecheck, tests, and build pass.
 
-## Verification Plan
+## Delivered
+
+- Added a small TypeScript memory contract for `got-memory` slots and MVP entry fields.
+- Updated the default `pull` query to request `facts`, `user_preferences`, `workspace_context`, `procedures`, `decisions`, `open_questions`, `summaries`, and `last_updated`.
+- Updated installed skill, AGENTS template, and bootstrap README/current notes to distinguish facts from user preferences.
+- Added contract tests for slots, default pull shape, and required entry metadata fields.
+
+## Verification
 
 - `bunx tsc --noEmit -p packages/agent-harness/tsconfig.json`
 - `bun run --filter='@got/agent-harness' test`
+  - 16 pass
+  - 0 fail
 - `bun run --filter='@got/agent-harness' build`
+  - succeeded
+- `git diff --check`
 - Manual tmp-workspace check:
-  - ask one chat to remember a fact
-  - ask another chat to remember a user preference
-  - verify `pull` returns them in different slots
+  - pushed a fact into `facts`
+  - pushed a user preference into `user_preferences`
+  - verified `pull` returned them in different slots
+  - stopped the smoke-test runtime cleanly
 
 ## Follow-Up
 

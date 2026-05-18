@@ -12,20 +12,22 @@ Use `./.got/bin/got-agent-harness runtime ensure` for an explicit runtime check/
 
 Do not read runtime storage files as memory. Files such as `.got/db/got.wal`, snapshots, checkpoints, or other DB runtime internals are implementation details.
 
-Because got pulls are explicit projections, write durable MVP memory under the stable `got-memory` node. Use `user_preferences`, `workspace_context`, `active_goal`, `current_state`, `recent_decisions`, `open_questions`, `procedures`, `summaries`, and `last_updated` as the retrievable memory properties.
+Because got pulls are explicit projections, write durable MVP memory under the stable `got-memory` node. Use `facts`, `user_preferences`, `workspace_context`, `procedures`, `decisions`, `open_questions`, `summaries`, and `last_updated` as the retrievable memory properties.
+
+Classify memory before writing. General remembered statements like "Apples are red" belong in `facts`. Stable user tendencies or instructions like "The user prefers short German answers" belong in `user_preferences`.
 
 Run routine memory lifecycle work quietly. Do not announce every lifecycle hook, file read, runtime check, got query, got write draft, or sandbox retry. Mention got memory management only when runtime access needs approval, a memory read/write fails, a durable memory write is the requested outcome, or retrieved memory materially changes the answer.
 
 Query the got DB runtime at deterministic lifecycle boundaries:
 
-- `before_turn`: retrieve workspace anchors, user preferences, active goals, decisions, open questions, procedures, and recent summaries.
+- `before_turn`: retrieve workspace anchors, facts, user preferences, workspace context, decisions, open questions, procedures, and recent summaries.
 - `before_action`: retrieve constraints, relevant files/packages, setup rules, known failure modes, and verification expectations.
 - `after_action`: push durable observations, artifacts, evidence, questions, and candidate summaries learned from tools or edits with `./.got/bin/got-agent-harness push`.
 - `after_commit`: push commit metadata, changed scope, decisions, and verification results.
 - `before_thread_switch`: push current handoff state into got.
 
-Use raw got JSON as the MVP exchange format. Store only actionable project state in got: active goal, implementation state, recent decisions, open questions, next steps, and last verified checks. Do not store raw chat logs, large tool outputs, full diffs, or generated artifacts.
+Use raw got JSON as the MVP exchange format. Store only actionable project state in got: facts, user preferences, workspace context, procedures, decisions, open questions, summaries, and last verified checks. Do not store raw chat logs, large tool outputs, full diffs, or generated artifacts.
 
-Every memory item should carry the minimum MVP metadata when practical: `source`, `scope`, `recency`, and `last_verified`.
+Every memory item should carry the minimum MVP metadata when practical: `id`, `type`, `text`, `scope`, `source`, `confidence`, and `last_verified`.
 
 If the Codex skill system supports workspace-local skills, use `.codex/skills/got-memory-management/SKILL.md` for the detailed workflow.

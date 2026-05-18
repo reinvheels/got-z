@@ -54,7 +54,17 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(skill).toContain("so concurrent chats do not start duplicate runtimes");
   expect(skill).toContain("stable node `got-memory`");
   expect(skill).toContain("Durable MVP memory should be written under that node");
+  expect(skill).toContain("`facts`: general remembered statements treated as true.");
   expect(skill).toContain("`user_preferences`");
+  expect(skill).toContain("Classify memory before writing");
+  expect(skill).toContain('A statement like "Apples are red" is a `fact`, not a `user_preferences` entry.');
+  expect(skill).toContain('A statement like "The user prefers short German answers" is a `user_preferences` entry.');
+  expect(skill).toContain('"facts"');
+  expect(skill).toContain('"type": "fact"');
+  expect(skill).toContain('"type": "preference"');
+  expect(skill).toContain("`id`: stable local identifier.");
+  expect(skill).toContain("`type`: memory object type matching the slot.");
+  expect(skill).toContain("`confidence`: high, medium, low, or unknown.");
   expect(skill).toContain("treat this skill as active by default");
   expect(skill).toContain("The user should not have to mention got memory management in every prompt");
   expect(skill).toContain("Run routine memory lifecycle work quietly");
@@ -98,6 +108,10 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(current).toContain("## Memory Source Rule");
   expect(current).toContain("got runtime is the only memory source");
   expect(current).toContain("Do not answer memory questions from markdown");
+  expect(current).toContain("## Memory Contract");
+  expect(current).toContain("Top-level slots: facts, user_preferences, workspace_context, procedures, decisions, open_questions, summaries, last_updated.");
+  expect(current).toContain("Facts are general remembered statements.");
+  expect(current).toContain("User preferences are stable user tendencies or instructions.");
 
   const agents = await Bun.file(joinPath(workspace, "AGENTS.got-memory.md")).text();
   expect(agents).toContain("got memory management is active in this workspace by default");
@@ -106,6 +120,11 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(agents).toContain("Do not answer memory questions from Markdown");
   expect(agents).toContain("Run routine memory lifecycle work quietly");
   expect(agents).toContain("write durable MVP memory under the stable `got-memory` node");
+  expect(agents).toContain("Use `facts`, `user_preferences`, `workspace_context`, `procedures`, `decisions`, `open_questions`, `summaries`, and `last_updated`");
+  expect(agents).toContain("Classify memory before writing");
+  expect(agents).toContain('General remembered statements like "Apples are red" belong in `facts`.');
+  expect(agents).toContain('Stable user tendencies or instructions like "The user prefers short German answers" belong in `user_preferences`.');
+  expect(agents).toContain("`id`, `type`, `text`, `scope`, `source`, `confidence`, and `last_verified`");
   expect(agents).toContain("`pull` ensures the workspace singleton runtime");
   expect(agents).toContain("so concurrent chats do not start duplicate runtimes");
   expect(agents).toContain("If harness runtime commands fail in a sandboxed client");

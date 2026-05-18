@@ -144,13 +144,12 @@ test("default memory pull query targets the stable memory anchor", () => {
   expect(defaultMemoryNodeId).toBe("got-memory");
   expect(defaultMemoryPullQuery).toEqual({
     "got-memory": {
+      facts: true,
       user_preferences: true,
       workspace_context: true,
-      active_goal: true,
-      current_state: true,
-      recent_decisions: true,
-      open_questions: true,
       procedures: true,
+      decisions: true,
+      open_questions: true,
       summaries: true,
       last_updated: true,
     },

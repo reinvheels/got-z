@@ -1,4 +1,5 @@
 import { $ } from "bun";
+export { defaultMemoryNodeId, defaultMemoryPullQuery } from "./memory-contract";
 
 export type RuntimeWorkspaceConfig = {
   readonly version: 1;
@@ -75,20 +76,6 @@ export const defaultRuntimeLogFile = ".got/runtime.log";
 export const defaultRuntimeStateFile = ".got/runtime.state.json";
 export const defaultRuntimeLockFile = ".got/runtime.lock";
 export const runtimeConfigFile = ".got/runtime.json";
-export const defaultMemoryNodeId = "got-memory";
-export const defaultMemoryPullQuery = {
-  [defaultMemoryNodeId]: {
-    user_preferences: true,
-    workspace_context: true,
-    active_goal: true,
-    current_state: true,
-    recent_decisions: true,
-    open_questions: true,
-    procedures: true,
-    summaries: true,
-    last_updated: true,
-  },
-} as const;
 
 const healthTimeoutMs = 500;
 const startTimeoutMs = 5000;

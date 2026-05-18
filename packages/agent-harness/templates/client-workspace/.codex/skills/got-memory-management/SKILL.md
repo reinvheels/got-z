@@ -51,15 +51,37 @@ Because got pulls are explicit projections, `pull` without a body uses the harne
 
 Use these properties on `got-memory`:
 
-- `user_preferences`: personal preferences the user wants remembered.
+- `facts`: general remembered statements treated as true.
+- `user_preferences`: stable user tendencies, instructions, or style choices.
 - `workspace_context`: durable workspace identity and setup facts.
-- `active_goal`: current durable task direction.
-- `current_state`: compact implementation state.
-- `recent_decisions`: accepted decisions that affect future work.
-- `open_questions`: unresolved questions.
 - `procedures`: reusable working procedures.
+- `decisions`: accepted directions that affect future work.
+- `open_questions`: unresolved questions.
 - `summaries`: compact summaries over multiple observations.
 - `last_updated`: timestamp or short verification note for the memory anchor.
+
+Classify memory before writing. A statement like "Apples are red" is a `fact`, not a `user_preferences` entry. A statement like "The user prefers short German answers" is a `user_preferences` entry.
+
+Example durable fact write:
+
+```json
+{
+  "got-memory": {
+    "facts": {
+      "fact-apples-red": {
+        "id": "fact-apples-red",
+        "type": "fact",
+        "text": "Apples are red.",
+        "scope": "user",
+        "source": "user",
+        "confidence": "high",
+        "last_verified": "user-confirmed"
+      }
+    },
+    "last_updated": "user-confirmed fact"
+  }
+}
+```
 
 Example durable preference write:
 
@@ -67,7 +89,15 @@ Example durable preference write:
 {
   "got-memory": {
     "user_preferences": {
-      "commit_timing": "Suggest commits only after a completed small work step, not in the middle of unfinished implementation."
+      "preference-commit-timing": {
+        "id": "preference-commit-timing",
+        "type": "preference",
+        "text": "Suggest commits only after a completed small work step, not in the middle of unfinished implementation.",
+        "scope": "user",
+        "source": "user",
+        "confidence": "high",
+        "last_verified": "user-confirmed"
+      }
     },
     "last_updated": "user-confirmed preference"
   }
@@ -79,6 +109,8 @@ Example durable preference write:
 Use this minimal vocabulary when drafting memory writes:
 
 - `observation`: something was seen, said, done, read, or produced.
+- `fact`: a general remembered statement currently treated as true.
+- `preference`: a stable user, project, or agent tendency/instruction.
 - `episode`: a concrete task, conversation, tool run, commit, or error.
 - `artifact`: a file, commit, document, test run, screenshot, or produced object.
 - `decision`: an accepted direction with status and context.
@@ -87,16 +119,19 @@ Use this minimal vocabulary when drafting memory writes:
 
 Each durable memory should include the minimum MVP metadata when practical:
 
-- `source`: where the memory came from.
+- `id`: stable local identifier.
+- `type`: memory object type matching the slot.
+- `text`: compact human-readable content.
 - `scope`: workspace, project, repo, user, agent, session, thread, or task.
-- `recency`: when it was observed or last used.
+- `source`: where the memory came from.
+- `confidence`: high, medium, low, or unknown.
 - `last_verified`: the last check, command, or human confirmation.
 
 ## got Runtime Queries
 
 The got DB runtime should be queried throughout the agent lifecycle, not only at thread start:
 
-- `before_turn`: query workspace anchors, user preferences, active task state, accepted decisions, open questions, procedures, and recent summaries.
+- `before_turn`: query workspace anchors, facts, user preferences, workspace context, decisions, open questions, procedures, and recent summaries.
 - `before_action`: query constraints, relevant files/packages, setup rules, known failure modes, and verification expectations before running tools.
 - `after_action`: summarize tool results and push useful observations, evidence, artifact state, questions, and candidate summaries into got.
 - `after_commit`: push commit metadata and link it to task, files, decisions, and verification results.
@@ -125,11 +160,13 @@ The MVP installs instructions only. It does not run autonomous background loops.
 
 Write only durable working context to got:
 
-- Active goal.
-- Current implementation state.
-- Recent decisions.
+- Facts.
+- User preferences.
+- Workspace context.
+- Procedures.
+- Decisions.
 - Open questions.
-- Next steps.
+- Summaries.
 - Last verified commands or checks.
 
 Do not store raw chat logs, large tool output, full diffs, generated artifacts, or speculative notes without a concrete next action.

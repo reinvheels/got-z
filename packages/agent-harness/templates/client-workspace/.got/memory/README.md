@@ -19,7 +19,9 @@ The got DB runtime is the only memory source. Agents must not answer memory ques
 
 ## Memory Anchor
 
-Durable MVP memory should be stored under the stable `got-memory` node because got pulls are explicit projections. The default `pull` command queries these properties: `user_preferences`, `workspace_context`, `active_goal`, `current_state`, `recent_decisions`, `open_questions`, `procedures`, `summaries`, and `last_updated`.
+Durable MVP memory should be stored under the stable `got-memory` node because got pulls are explicit projections. The default `pull` command queries these properties: `facts`, `user_preferences`, `workspace_context`, `procedures`, `decisions`, `open_questions`, `summaries`, and `last_updated`.
+
+General remembered statements belong in `facts`. Stable user tendencies or instructions belong in `user_preferences`. Individual memory entries should carry `id`, `type`, `text`, `scope`, `source`, `confidence`, and `last_verified` when practical.
 
 ## Files
 
