@@ -28,6 +28,27 @@ Pull results should be deterministic enough for external renderers to convert ra
 
 got should leave room for future memory scopes such as user, project, repo, session, and task. It should also leave room for identity metadata such as local node keys, internal IDs, aliases, and external IRIs.
 
+## Query Primitives For Harnesses
+
+got should expose graph-query primitives that external harnesses can compose into memory retrieval flows without moving the lifecycle into the runtime.
+
+Edge discovery should return all known edges of a node, optionally including target IDs, target basis properties, and available edge properties. This gives clients a deterministic way to inspect a node's graph boundary before issuing more specific projection or traversal queries.
+
+Cluster discovery should return bounded subgraphs around one or more seeds. The runtime should provide deterministic graph-shaped results with explicit limits, depths, edge selections, and returned properties. Clients decide why a cluster is useful and how to render or score it.
+
+Important cluster types:
+
+- Ego cluster: the local neighborhood around one node, usually depth 1 or 2.
+- Typed neighborhood: a neighborhood restricted to selected edge types.
+- Evidence cluster: files, tests, commits, commands, observations, or decisions that support a claim.
+- Tension cluster: contradictions, superseded facts, disputed claims, and constraining decisions around a topic.
+- Task cluster: the files, procedures, decisions, checks, failure modes, and artifacts relevant to a current task.
+- Temporal cluster: memories grouped by creation, observation, recency, or validity bands.
+- Similar-shape cluster: subgraphs with a similar relationship pattern, used for analogies and repeated solution shapes.
+- Community cluster: a dense local topic island discovered from graph structure.
+
+The near-term runtime path should start with edge discovery and bounded ego clusters. Richer typed, evidence, tension, temporal, similar-shape, and community clusters can grow from the same graph grammar once traversal, filtering, reverse edges, and scoring metadata mature. got provides the graph primitives; harnesses own retrieval strategy, scoring, interpretation, and lifecycle decisions.
+
 ## Long-Term Capabilities
 
 After the minimal durable graph API is useful, got should grow toward stricter validation, WAL snapshots and compaction, deletion and supersede semantics, history, traversal/query primitives beyond projection reads, query filters, cursor pagination, recency-band retrieval, exclusion filters, graph health queries, persistent-mode backpressure, and optional web-standard export/import projections such as JSON-LD or RDF.
