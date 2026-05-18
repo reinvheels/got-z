@@ -143,7 +143,17 @@ The harness should leave no runtime listening after tests finish.
 
 Prefer small, focused changesets with clear commit messages. After a small coherent step is implemented, tested, and the user is satisfied with the direction, proactively suggest committing before moving on to the next step. Keep unrelated edits out of the same commit unless they are necessary for the change to work.
 
+Commit subjects must use exactly one of these prefix forms:
+
+- `root/NNNN: summary` for repository-level increments.
+- `@got/package-name/NNNN: summary` for package-level increments.
+- `noinc: summary` for commits that intentionally do not belong to any project increment.
+
+`noinc` is a complete standalone prefix. Never combine it with a package, scope, or increment path. Invalid examples: `@got/agent-harness/noinc: ...`, `root/noinc: ...`, `noinc/agent-harness: ...`.
+
 When a change belongs to a planned increment, reference the increment id in the commit message. Use `root/NNNN` for repository-level planning and the package name plus increment number for package-level planning, for example `root/0002: migrate planning artifacts` or `@got/agent-harness/0001: add init templates`. Use `noinc:` for commits that intentionally do not belong to any project increment, for example `noinc: update planning workflow rules`. Do not track commit hashes inside increment records; Git history should point to increments, not the other way around.
+
+For package-specific changes, use that package's current increment from `packages/<name>/plan/SCOPE.md` as the commit prefix until the user explicitly starts a new package increment. This remains true even if the scope says the increment is completed or awaiting the next increment. A package-specific code, test, template, or package planning change should not use `noinc:` while a current package increment exists.
 
 Before every commit, explicitly re-check whether the staged change belongs to the active root or package increment, a completed increment that is still being amended, or no increment at all. Classify by the artifact and scope being changed, not by the conversation that exposed the need. Do not choose `noinc:` just because a change is small, reactive, or test-feedback-driven; use `noinc:` only when the change is deliberately outside project planning. Meta-workflow changes such as `AGENTS.md` rules, commit-flow rules, planning-process rules, and agent behavior instructions are `noinc:` unless the user has explicitly started a root-level workflow/planning increment for them. Do not attach meta-workflow commits to a product or package increment just because they were discovered while testing that package. If the classification is ambiguous, pause and ask the user before committing.
 
