@@ -34,11 +34,10 @@ After the minimal durable graph API is useful, got should grow toward stricter v
 
 ## Project Planning
 
-Global project planning lives at the repository root:
+Global project planning lives in `plan/` at the repository root:
 
-- `VISION.md` records long-term direction and boundaries.
-- `SCOPE.md` records the active, minimal increment.
-- `increments/` records completed or archived increments.
+- `plan/VISION.md` records long-term direction and boundaries.
+- `plan/SCOPE.md` records the active, minimal increment.
+- `plan/increments/` records completed or archived increments.
 
-Package-specific planning may use the same structure inside the package root when the work is owned by one package.
-
+Package-specific planning may use the same structure inside the package root, such as `packages/agent-harness/plan/`, when the work is owned by one package.

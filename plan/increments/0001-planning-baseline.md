@@ -24,8 +24,8 @@ Runtime non-goals included LLM reflection, prompt orchestration, human-like thin
 
 ## Delivered
 
-- Root `VISION.md` now owns long-term direction and boundaries.
-- Root `SCOPE.md` now owns the active minimal increment.
+- Root planning vision now owns long-term direction and boundaries.
+- Root planning scope now owns the active minimal increment.
 - The old docs-level planning file was removed so planning detail cannot drift from the root planning artifacts.
 
 ## Verification
@@ -35,4 +35,4 @@ Runtime non-goals included LLM reflection, prompt orchestration, human-like thin
 
 ## Follow-Up
 
-- After this increment is accepted, rewrite `SCOPE.md` to the next small product or documentation increment before implementation starts.
+- After this increment is accepted, rewrite the active scope to the next small product or documentation increment before implementation starts.
