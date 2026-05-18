@@ -64,6 +64,92 @@ LLM-to-Graph translation may use an LLM, but should not write directly to got. I
 
 The translation layer should support query planning over time, but query planning is separate from rendering and mutation generation. A planner decides what to ask got; a renderer decides how got results enter the model context; a translator decides what candidate mutations should be proposed after observations.
 
+## Memory Representation
+
+The harness should support two complementary representations for durable knowledge: prose and triplets.
+
+Prose is best for compact, human-readable context that the LLM should understand as a whole. It may live as a short sentence, summary, or Markdown string on a node property. Prose is appropriate for explanations, working notes, condensed episode summaries, uncertainty, rationale, or anything where exact graph structure would add more ceremony than retrieval value.
+
+Example prose memory for a coding agent:
+
+```json
+{
+  "feature-runtime-singleton": {
+    "type": "feature",
+    "summary": "The agent harness should ensure one managed got runtime per workspace before pull and push commands.",
+    "notes_md": "Sandboxed clients may need permission escalation for the workspace-local harness CLI. Do not parse runtime storage files as memory."
+  }
+}
+```
+
+Triplets are best for strongly connected operational knowledge that should be traversed, filtered, explained, or reused from different entry points. A triplet is represented as a subject node, a typed edge, and an object node. Edge properties carry metadata about that relationship.
+
+Example triplet memory for a coding agent:
+
+```json
+{
+  "got-agent-harness pull": {
+    "type": "cli-command",
+    ">ensures": {
+      "workspace-runtime-singleton": {
+        "type": "runtime-behavior",
+        "-source": "implementation",
+        "-confidence": "high"
+      }
+    }
+  },
+  "workspace-runtime-singleton": {
+    "type": "runtime-behavior",
+    ">uses": {
+      "runtime-lockfile": {
+        "type": "mechanism",
+        "-reason": "prevent duplicate runtime processes per workspace"
+      }
+    },
+    ">starts": {
+      "db-runtime": {
+        "type": "binary",
+        "-mode": "persistent"
+      }
+    },
+    ">prevents": {
+      "duplicate-runtime-per-workspace": {
+        "type": "failure-mode"
+      }
+    }
+  },
+  "sandboxed-pid-probe": {
+    "type": "failure-mode",
+    ">can_fail_with": {
+      "EPERM": {
+        "type": "error-code"
+      }
+    }
+  },
+  "EPERM-pid-probe": {
+    "type": "runtime-knowledge",
+    ">does_not_mean": {
+      "runtime-is-dead": {
+        "type": "wrong-conclusion",
+        "-source": "test failure analysis"
+      }
+    }
+  },
+  "packages/agent-harness/src/runtime.test.ts": {
+    "type": "file",
+    ">verifies": {
+      "EPERM-pid-probe-treated-as-running": {
+        "type": "behavior"
+      }
+    }
+  }
+}
+```
+
+The default strategy should be pragmatic. Store prose when the main purpose is to give the LLM useful context. Store triplets when the memory should answer graph-shaped questions such as which file verifies a behavior, which command ensures a runtime state, which decision constrains an implementation, which failure mode caused a bug, or which procedure applies before an action.
+
+Hybrid memories are valid. A node may carry a prose `summary` for quick context and typed edges for retrieval. The important boundary is that triplet-worthy knowledge should not be hidden only inside prose if later agents need to traverse it.
+
 ## Memory Hygiene
 
 The harness should track metadata that keeps memory useful over time:
