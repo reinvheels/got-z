@@ -17,7 +17,7 @@ async function createTempWorkspace(): Promise<string> {
   return dir;
 }
 
-test("initAgentHarness copies memory management skill and markdown templates", async () => {
+test("initAgentHarness copies memory management skill and bootstrap templates", async () => {
   const workspace = await createTempWorkspace();
 
   const result = await initAgentHarness({ targetDir: workspace });
@@ -27,9 +27,7 @@ test("initAgentHarness copies memory management skill and markdown templates", a
     ".got/bin/got-agent-harness",
     ".codex/skills/got-memory-management/SKILL.md",
     ".got/memory/README.md",
-    ".got/memory/checkpoints.md",
     ".got/memory/current.md",
-    ".got/memory/open-questions.md",
     ".got/runtime.json",
     "AGENTS.got-memory.md",
   ].sort());
@@ -38,7 +36,7 @@ test("initAgentHarness copies memory management skill and markdown templates", a
   );
   expect(await Bun.file(joinPath(workspace, ".got/memory/current.md")).text()).toContain("## got Runtime");
   expect(await Bun.file(joinPath(workspace, "AGENTS.got-memory.md")).text()).toContain(
-    "The got DB runtime is the primary memory backend.",
+    "The got DB runtime is the only memory source.",
   );
 });
 
@@ -59,9 +57,12 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(skill).toContain("The user should not have to mention got memory management in every prompt");
   expect(skill).toContain("Run routine memory lifecycle work quietly");
   expect(skill).toContain("Do not announce every lifecycle hook");
+  expect(skill).toContain("The got DB runtime is the only memory source");
+  expect(skill).toContain("Do not answer memory questions from Markdown");
+  expect(skill).toContain("Do not treat Markdown as memory");
   expect(skill).toContain("Use the workspace-local harness CLI instead of direct `curl`");
   expect(skill).toContain("request the client's permission");
-  expect(skill).toContain("Only fall back to markdown after the permitted retry fails");
+  expect(skill).toContain("Only report memory unavailable after the permitted retry fails");
   expect(skill).toContain("Do not read runtime storage files as a memory source");
   expect(skill).toContain("Never parse the WAL or snapshot files to recover memory");
   expect(skill).toContain("`before_turn`");
@@ -90,21 +91,22 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(current).toContain("- Runtime status: `./.got/bin/got-agent-harness runtime status`.");
   expect(current).toContain("- Runtime start: `./.got/bin/got-agent-harness runtime start`.");
   expect(current).toContain("- Exchange format: raw got JSON.");
-  expect(current).toContain("## Memory Metadata Defaults");
-  expect(current).toContain("`source`");
-  expect(current).toContain("`scope`");
-  expect(current).toContain("`recency`");
-  expect(current).toContain("`last_verified`");
+  expect(current).toContain("## Memory Source Rule");
+  expect(current).toContain("got runtime is the only memory source");
+  expect(current).toContain("Do not answer memory questions from markdown");
 
   const agents = await Bun.file(joinPath(workspace, "AGENTS.got-memory.md")).text();
   expect(agents).toContain("got memory management is active in this workspace by default");
   expect(agents).toContain("The user does not need to mention it in each prompt");
+  expect(agents).toContain("The got DB runtime is the only memory source");
+  expect(agents).toContain("Do not answer memory questions from Markdown");
   expect(agents).toContain("Run routine memory lifecycle work quietly");
   expect(agents).toContain("write durable MVP memory under the stable `got-memory` node");
   expect(agents).toContain("If harness runtime commands fail in a sandboxed client");
-  expect(agents).toContain("Treat markdown fallback as the last step");
+  expect(agents).toContain("do not substitute Markdown memory");
   expect(agents).toContain("Do not read runtime storage files as memory");
-  expect(agents).toContain("If `/pull` returns no relevant memory");
+  expect(agents).not.toContain("fallback");
+  expect(agents).not.toContain("Fallback");
 });
 
 test("initAgentHarness renders runtime config and creates runtime cwd", async () => {
@@ -150,7 +152,7 @@ test("initAgentHarness can wire AGENTS.md idempotently", async () => {
   const agentsPath = joinPath(workspace, "AGENTS.md");
   const agents = await Bun.file(agentsPath).text();
   expect(agents).toContain("<!-- got-memory-management:start -->");
-  expect(agents).toContain("The got DB runtime is the primary memory backend.");
+  expect(agents).toContain("The got DB runtime is the only memory source.");
   expect(agents).toContain("<!-- got-memory-management:end -->");
 
   const second = await initAgentHarness({ targetDir: workspace, withAgents: true });

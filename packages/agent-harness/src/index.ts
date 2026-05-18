@@ -68,14 +68,6 @@ const templateFiles = [
     target: ".got/memory/current.md",
   },
   {
-    source: ".got/memory/checkpoints.md",
-    target: ".got/memory/checkpoints.md",
-  },
-  {
-    source: ".got/memory/open-questions.md",
-    target: ".got/memory/open-questions.md",
-  },
-  {
     source: "AGENTS.got-memory.md",
     target: "AGENTS.got-memory.md",
   },
@@ -176,13 +168,6 @@ function renderCurrentState(input: { workspaceName: string; runtime: InitAgentHa
 
 - Workspace: ${workspaceName}.
 - Scope: workspace.
-- Source: bootstrap init.
-- Recency: initial setup.
-- Last verified: not verified.
-
-## Active Goal
-
-- Not initialized.
 
 ## got Runtime
 
@@ -201,23 +186,11 @@ function renderCurrentState(input: { workspaceName: string; runtime: InitAgentHa
 
 ## Lifecycle Hooks
 
-- \`before_turn\`: query got before relying on markdown fallback.
+- \`before_turn\`: query got before answering memory-sensitive questions.
 - \`before_action\`: query got for constraints, decisions, procedures, and verification expectations.
 - \`after_action\`: describe durable observations as raw got JSON candidate mutations.
 - \`after_commit\`: record commit metadata, changed scope, and verification result.
-- \`before_thread_switch\`: refresh markdown fallback from current got state.
-
-## Current Implementation State
-
-- Not initialized.
-
-## Recent Decisions
-
-- Not initialized.
-
-## Open Questions
-
-- Not initialized.
+- \`before_thread_switch\`: push compact handoff state into got.
 
 ## Next Steps
 
@@ -225,16 +198,12 @@ function renderCurrentState(input: { workspaceName: string; runtime: InitAgentHa
   - \`${runtime.command}\`
   - \`${runtime.cliCommand} runtime status\`
 
-## Last Verified
+## Memory Source Rule
 
-- Not initialized.
-
-## Memory Metadata Defaults
-
-- \`source\`: bootstrap init.
-- \`scope\`: workspace.
-- \`recency\`: initial setup.
-- \`last_verified\`: not verified.
+- got runtime is the only memory source.
+- Markdown files are runtime bootstrap/configuration only.
+- Do not answer memory questions from markdown.
+- If got is unavailable, report memory unavailable.
 `;
 }
 
