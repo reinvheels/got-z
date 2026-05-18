@@ -12,7 +12,8 @@ got memory management should query the got DB runtime continuously during the ag
 - Read path: `POST /pull` with raw got JSON.
 - Write path: `POST /push` with raw got JSON.
 - Persistence mode and working directory are configured outside these markdown files.
-- If the runtime is unavailable, use these markdown files as fallback and record that memory was not refreshed.
+- If localhost runtime checks fail in a sandboxed client, request the available permission, escalation, or unsandboxed command path for localhost and retry before declaring the runtime unavailable.
+- If the runtime is still unavailable after that retry, use these markdown files as fallback and record that memory was not refreshed.
 
 ## Lifecycle Hooks
 

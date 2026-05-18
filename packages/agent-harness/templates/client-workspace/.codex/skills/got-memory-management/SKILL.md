@@ -13,13 +13,14 @@ When this skill is active:
 
 1. Read `.got/memory/current.md` to discover workspace identity, got runtime configuration, and fallback state.
 2. Check the runtime with `GET /` when a got runtime URL is configured.
-3. Query the got DB runtime for relevant workspace, user, task, decision, procedure, artifact, question, summary, and recent activity context.
-4. Use markdown state only as bootstrap, fallback, or human-readable checkpoint material.
-5. Read `.got/memory/open-questions.md` when the task touches planning, architecture, or unresolved decisions.
-6. Read `.got/memory/checkpoints.md` when reconstructing recent progress or preparing a thread handoff.
-7. Read workspace `AGENTS.md` if it exists.
-8. Before actions, query got for relevant constraints, decisions, next steps, and verification requirements.
-9. After meaningful progress, describe durable observations as raw got JSON candidate mutations, push them to got when runtime access is available, and update markdown checkpoints with concise, actionable project state.
+3. If the runtime check fails in a sandboxed client, request the client's localhost permission or escalation path and retry before treating got as unavailable.
+4. Query the got DB runtime for relevant workspace, user, task, decision, procedure, artifact, question, summary, and recent activity context.
+5. Use markdown state only as bootstrap, fallback, or human-readable checkpoint material.
+6. Read `.got/memory/open-questions.md` when the task touches planning, architecture, or unresolved decisions.
+7. Read `.got/memory/checkpoints.md` when reconstructing recent progress or preparing a thread handoff.
+8. Read workspace `AGENTS.md` if it exists.
+9. Before actions, query got for relevant constraints, decisions, next steps, and verification requirements.
+10. After meaningful progress, describe durable observations as raw got JSON candidate mutations, push them to got when runtime access is available, and update markdown checkpoints with concise, actionable project state.
 
 ## Runtime Contract
 
@@ -31,7 +32,9 @@ The MVP assumes the got DB runtime is a local HTTP service:
 - Persistence: explicit runtime mode, configured outside this skill.
 - Data location: runtime working directory, configured outside this skill.
 
-If the runtime is unavailable, continue from markdown fallback state and record that got-backed memory was not refreshed.
+Localhost access may be sandboxed in Codex-like clients. If `GET /`, `/pull`, or `/push` fails with connection refused, operation not permitted, `EPERM`, `EACCES`, or a generic fetch/curl connection failure, do not conclude the runtime is down yet. First request the client's permission, escalation, or unsandboxed command path for localhost access and retry the same check. Only fall back to markdown after the permitted retry fails or the user declines.
+
+If the runtime is still unavailable after that retry, continue from markdown fallback state and record that got-backed memory was not refreshed.
 
 ## Memory Object Vocabulary
 

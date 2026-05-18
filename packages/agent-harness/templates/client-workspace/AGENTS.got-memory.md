@@ -6,6 +6,8 @@ The got DB runtime is the primary memory backend. Markdown files under `.got/mem
 
 Before substantive work, read `.got/memory/current.md` to find workspace identity, runtime configuration, and fallback state, then query the got DB runtime for relevant workspace, user, task, decision, procedure, artifact, question, summary, and recent activity context. For architecture, planning, or handoff work, also read `.got/memory/open-questions.md` and `.got/memory/checkpoints.md`.
 
+If localhost runtime checks fail in a sandboxed client, request the available permission, escalation, or unsandboxed command path for localhost and retry before declaring the runtime unavailable. Treat markdown fallback as the last step, not the first failure path.
+
 Query the got DB runtime at deterministic lifecycle boundaries:
 
 - `before_turn`: retrieve workspace anchors, user preferences, active goals, decisions, open questions, procedures, and recent checkpoints.

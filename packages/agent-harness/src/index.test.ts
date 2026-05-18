@@ -49,6 +49,9 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(skill).toContain("Readiness check: `GET /`.");
   expect(skill).toContain("Read: `POST /pull` with raw got JSON projection requests.");
   expect(skill).toContain("Write: `POST /push` with raw got JSON graph mutations.");
+  expect(skill).toContain("Localhost access may be sandboxed");
+  expect(skill).toContain("request the client's permission");
+  expect(skill).toContain("Only fall back to markdown after the permitted retry fails");
   expect(skill).toContain("`before_turn`");
   expect(skill).toContain("`before_action`");
   expect(skill).toContain("`after_action`");
@@ -79,6 +82,10 @@ test("installed templates define the MVP memory lifecycle contract", async () =>
   expect(current).toContain("`scope`");
   expect(current).toContain("`recency`");
   expect(current).toContain("`last_verified`");
+
+  const agents = await Bun.file(joinPath(workspace, "AGENTS.got-memory.md")).text();
+  expect(agents).toContain("If localhost runtime checks fail in a sandboxed client");
+  expect(agents).toContain("Treat markdown fallback as the last step");
 });
 
 test("initAgentHarness renders runtime config and creates runtime cwd", async () => {
