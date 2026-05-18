@@ -24,6 +24,13 @@ Install got memory management into any workspace and define the minimum lifecycl
 - Require `before_turn` and `before_action` to query got before relying on markdown fallback.
 - Require `after_action` and `after_commit` to describe what should be pushed to got, even if the MVP template cannot execute the push itself.
 
+## MVP: got-LLM Translation Layer
+
+- Defer the full translation layer.
+- Allow raw got JSON as MVP prompt context and mutation draft format.
+- Name the three translation responsibilities: query planning, graph-to-context rendering, and observation-to-candidate-mutation translation.
+- Do not implement a planner, renderer, translator, context block template system, or LLM call pipeline in the MVP.
+
 ## MVP: Memory Hygiene
 
 - Track only the minimum metadata fields in templates: `source`, `scope`, `recency`, and `last_verified`.
@@ -44,7 +51,7 @@ Install got memory management into any workspace and define the minimum lifecycl
 
 ## MVP: Contract Implications
 
-- State that future got API contracts should support memory classes, provenance, time, standard edge types, retrieval patterns, and maintenance-visible state.
+- State that future got API contracts should support memory classes, provenance, time, standard edge types, retrieval patterns, translation examples, and maintenance-visible state.
 - Do not implement contract generation, query helpers, renderers, translators, or runtime clients in the MVP.
 
 ## MVP Out Of Scope

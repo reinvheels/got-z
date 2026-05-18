@@ -49,6 +49,21 @@ The harness should not run one generic "search memory" step. It should run small
 
 Memories should be reactivated by context throughout the turn, not only loaded once at the beginning.
 
+## got-LLM Translation Layer
+
+The harness needs a translation layer between LLM-friendly natural language and got-friendly graph JSON. Raw graph JSON should be treated as an intermediate representation, not as the final prompt format.
+
+The translation layer has two asymmetric directions:
+
+- Graph to LLM: render got query results into compact, typed, explainable natural-language context blocks.
+- LLM to Graph: turn conversation, tool results, and observations into candidate graph mutations that can be validated, reviewed, and written to got.
+
+Graph-to-LLM rendering should be as deterministic as possible. The renderer should use programmable text blocks for memory types such as preference, decision, episode, artifact, procedure, question, conflict, and evidence.
+
+LLM-to-Graph translation may use an LLM, but should not write directly to got. It should produce candidate mutations with provenance, scope, source, confidence when available, and an explanation of why the candidate should be stored.
+
+The translation layer should support query planning over time, but query planning is separate from rendering and mutation generation. A planner decides what to ask got; a renderer decides how got results enter the model context; a translator decides what candidate mutations should be proposed after observations.
+
 ## Memory Hygiene
 
 The harness should track metadata that keeps memory useful over time:
@@ -86,6 +101,7 @@ Second-brain quality requires these capabilities over time:
 - Explainable retrieval: why a memory was selected.
 - Memory write policies: when an agent may store memory.
 - Human review: which memory changes need confirmation.
+- got-LLM translation layer for graph-to-context rendering and observation-to-mutation candidates.
 - Client adapters for Codex-style and custom harness clients.
 - Export and import through JSON-LD, RDF, Markdown, or other projections.
 
@@ -123,6 +139,7 @@ got's API contract and future query primitives should eventually express enough 
 - Temporal modeling.
 - Standard semantic edge types.
 - Retrieval request patterns.
+- Translation examples for rendered context blocks and candidate mutations.
 - Maintenance-visible state.
 - Testable conformance examples for lifecycle reads and writes.
 
