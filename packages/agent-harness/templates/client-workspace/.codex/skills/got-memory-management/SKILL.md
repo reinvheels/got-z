@@ -12,24 +12,73 @@ got memory management is the workspace-level lifecycle layer for keeping agent c
 When this skill is active:
 
 1. Read `.got/memory/current.md` to discover workspace identity, got runtime configuration, and fallback state.
-2. Query the got DB runtime for relevant workspace, user, task, decision, procedure, and recent activity context.
-3. Read `.got/memory/open-questions.md` when the task touches planning, architecture, or unresolved decisions.
-4. Read `.got/memory/checkpoints.md` when reconstructing recent progress or preparing a thread handoff.
-5. Read workspace `AGENTS.md` if it exists.
-6. Before actions, query got for relevant constraints, decisions, next steps, and verification requirements.
-7. After meaningful progress, write durable observations back to got and update markdown checkpoints with concise, actionable project state.
+2. Check the runtime with `GET /` when a got runtime URL is configured.
+3. Query the got DB runtime for relevant workspace, user, task, decision, procedure, artifact, question, summary, and recent activity context.
+4. Use markdown state only as bootstrap, fallback, or human-readable checkpoint material.
+5. Read `.got/memory/open-questions.md` when the task touches planning, architecture, or unresolved decisions.
+6. Read `.got/memory/checkpoints.md` when reconstructing recent progress or preparing a thread handoff.
+7. Read workspace `AGENTS.md` if it exists.
+8. Before actions, query got for relevant constraints, decisions, next steps, and verification requirements.
+9. After meaningful progress, describe durable observations as raw got JSON candidate mutations, push them to got when runtime access is available, and update markdown checkpoints with concise, actionable project state.
+
+## Runtime Contract
+
+The MVP assumes the got DB runtime is a local HTTP service:
+
+- Readiness check: `GET /`.
+- Read: `POST /pull` with raw got JSON projection requests.
+- Write: `POST /push` with raw got JSON graph mutations.
+- Persistence: explicit runtime mode, configured outside this skill.
+- Data location: runtime working directory, configured outside this skill.
+
+If the runtime is unavailable, continue from markdown fallback state and record that got-backed memory was not refreshed.
+
+## Memory Object Vocabulary
+
+Use this minimal vocabulary when drafting memory writes:
+
+- `observation`: something was seen, said, done, read, or produced.
+- `episode`: a concrete task, conversation, tool run, commit, or error.
+- `artifact`: a file, commit, document, test run, screenshot, or produced object.
+- `decision`: an accepted direction with status and context.
+- `question`: an unresolved question or uncertainty.
+- `summary`: a compact memory derived from multiple observations or episodes.
+
+Each durable memory should include the minimum MVP metadata when practical:
+
+- `source`: where the memory came from.
+- `scope`: workspace, project, repo, user, agent, session, thread, or task.
+- `recency`: when it was observed or last used.
+- `last_verified`: the last check, command, or human confirmation.
 
 ## got Runtime Queries
 
 The got DB runtime should be queried throughout the agent lifecycle, not only at thread start:
 
-- `before_turn`: query workspace anchors, user preferences, active task state, accepted decisions, open questions, and recent checkpoints.
-- `before_action`: query constraints, procedures, affected files/packages, and relevant decisions before running tools.
-- `after_action`: summarize tool results and push useful observations, evidence, and changed state into got.
+- `before_turn`: query workspace anchors, user preferences, active task state, accepted decisions, open questions, procedures, and recent checkpoints.
+- `before_action`: query constraints, relevant files/packages, setup rules, known failure modes, and verification expectations before running tools.
+- `after_action`: summarize tool results and push useful observations, evidence, artifact state, questions, and candidate summaries into got.
 - `after_commit`: push commit metadata and link it to task, files, decisions, and verification results.
 - `before_thread_switch`: query current graph state, render a compact handoff, and update markdown fallback files.
 
-If the got runtime is unavailable, use markdown state files as fallback and record that runtime-backed memory was not refreshed.
+## Translation Responsibilities
+
+Raw got JSON is allowed as MVP prompt context and mutation draft format. Keep the following responsibilities distinct even though the MVP does not implement them as code:
+
+- Query planning decides what to ask got.
+- Graph-to-context rendering decides how got results enter model context.
+- Observation-to-candidate-mutation translation decides what should be written after new observations.
+
+## Long-Term Lifecycle Loops
+
+The long-term harness should grow toward four loops:
+
+- `perceive`: collect observations from conversation, tools, files, tests, commits, and runtime behavior.
+- `retrieve`: activate relevant memories for the current workspace, task, action, and user.
+- `reflect`: derive facts, patterns, contradictions, procedures, decisions, and hypotheses.
+- `maintain`: condense, merge, decay, supersede, archive, and surface conflicts.
+
+The MVP installs instructions only. It does not run autonomous background loops.
 
 ## State Update Rules
 
