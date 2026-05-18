@@ -264,14 +264,20 @@ async function getRuntimeStatusForConfig(
   const paths = getRuntimePaths(targetDir, config);
   const pid = await readPid(paths.pidFile);
   const pidRunning = pid !== undefined && isPidRunning(pid);
+  const managed = pid !== undefined && pidRunning;
+
+  if (pid !== undefined && !pidRunning) {
+    await cleanupRuntimeMetadata(paths);
+  }
+
   const health = await createRuntimeClient(config).check();
   const reachable = health.ok;
 
   return {
     running: pidRunning || reachable,
-    managed: pid !== undefined,
+    managed,
     reachable,
-    pid,
+    pid: pidRunning ? pid : undefined,
     pidRunning,
     url: config.url,
     cwd: paths.cwd,

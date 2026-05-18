@@ -8,6 +8,7 @@ import {
   defaultMemoryNodeId,
   defaultMemoryPullQuery,
   getRuntimePaths,
+  getRuntimeStatus,
   loadRuntimeWorkspaceConfig,
   writeRuntimeWorkspaceConfig,
 } from "./runtime";
@@ -122,4 +123,28 @@ test("default memory pull query targets the stable memory anchor", () => {
       last_updated: true,
     },
   });
+});
+
+test("runtime status clears stale managed pid metadata", async () => {
+  const workspace = `${(Bun.env.TMPDIR ?? "/tmp").replace(/\/+$/, "")}/got-agent-runtime-${crypto.randomUUID()}`;
+  await $`mkdir -p ${workspace}/.got`;
+  tempDirs.push(workspace);
+
+  const config = await buildRuntimeWorkspaceConfig({
+    runtimeUrl: "http://127.0.0.1:1",
+    runtimeBin: "/opt/got/bin/db-runtime",
+  });
+  await writeRuntimeWorkspaceConfig(workspace, config);
+
+  const paths = getRuntimePaths(workspace, config);
+  await Bun.write(paths.pidFile, "999999\n");
+  await Bun.write(paths.stateFile, "{}\n");
+
+  const status = await getRuntimeStatus(workspace);
+
+  expect(status.managed).toBe(false);
+  expect(status.pid).toBeUndefined();
+  expect(status.pidRunning).toBe(false);
+  expect(await Bun.file(paths.pidFile).exists()).toBe(false);
+  expect(await Bun.file(paths.stateFile).exists()).toBe(false);
 });
